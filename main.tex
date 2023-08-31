@@ -1,0 +1,659 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Beamer Presentation
+% LaTeX Template
+% Version 1.0 (10/11/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND THEMES
+%----------------------------------------------------------------------------------------
+
+\documentclass[14pt,aspectratio=169]{beamer}
+
+\mode<presentation> {
+
+
+% The Beamer class comes with a number of default slide themes
+% which change the colors and layouts of slides. Below this is a list
+% of all the themes, uncomment each in turn to see what they look like.
+
+% \usetheme{default}
+% \usetheme{AnnArbor}
+% \usetheme{Antibes}
+% \usetheme{Bergen}
+% \usetheme{Berkeley}
+% \usetheme{Berlin}
+% \usetheme{Boadilla}
+% \usetheme{CambridgeUS}
+% \usetheme{Copenhagen}
+% \usetheme{Darmstadt}
+% \usetheme{Dresden}
+% \usetheme{Frankfurt}
+% \usetheme{Goettingen}
+% \usetheme{Hannovers}
+% \usetheme{Ilmenau}
+% \usetheme{JuanLesPins}
+% \usetheme{Luebeck}
+% \usetheme{Madrid}
+% \usetheme{Malmoe}
+% \usetheme{Marburg}
+% \usetheme{Montpellier}
+% \usetheme{PaloAlto}
+% \usetheme{Pittsburgh}
+\usetheme{Rochester}
+% \usetheme{Singapore}
+% \usetheme{Szeged}
+% \usetheme{Warsaw}
+
+% As well as themes, the Beamer class has a number of color themes
+% for any slide theme. Uncomment each of these in turn to see how it
+% changes the colors of your current slide theme.
+
+% \usecolortheme{albatross}
+% \usecolortheme{beaver}
+% \usecolortheme{beetle}
+\usecolortheme{crane}
+% \usecolortheme{dolphin}
+% \usecolortheme{dove}
+% \usecolortheme{fly}
+% \usecolortheme{lily}
+% \usecolortheme{orchid}
+% \usecolortheme{rose}
+% \usecolortheme{seagull}
+% \usecolortheme{seahorse}
+% \usecolortheme{whale}
+% \usecolortheme{wolverine}
+
+%\setbeamertemplate{footline} % To remove the footer line in all slides uncomment this line
+%\setbeamertemplate{footline}[page number] % To replace the footer line in all slides with a simple slide count uncomment this line
+
+%\setbeamertemplate{navigation symbols}{} % To remove the navigation symbols from the bottom of all slides uncomment this line
+}
+
+\definecolor{darkblue}{RGB}{32, 43, 56}
+\definecolor{lightblue}{RGB}{203, 220, 239}
+\definecolor{red}{RGB}{201, 42, 42}
+\setbeamercolor*{palette primary}{bg=darkblue,fg=white}
+\setbeamercolor*{palette quaternary}{bg=lightblue}
+\setbeamercolor{section in toc}{fg=darkblue,bg=white}
+
+\usepackage{graphicx} % Allows including images
+\usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
+\usepackage{hyperref}
+\usepackage{minted}
+\renewcommand{\MintedPygmentize}{./pygmentize.py}
+
+
+% fonts
+\usepackage[T1]{fontenc}
+\usepackage[extrabold]{inter}
+\usefonttheme[onlymath]{serif}
+\usefonttheme{structurebold} 
+
+\setbeamertemplate{frametitle continuation}{}
+
+\setlength{\parskip}{\baselineskip}
+
+\newenvironment{slide}[1]
+    {\begin{frame}[containsverbatim,allowframebreaks,noframenumbering]
+        \frametitle{#1}
+    }
+    {\end{frame}}
+
+\newenvironment{slidefull}
+    {
+        \setbeamercolor{background canvas}{bg=darkblue}
+        \setbeamercolor{normal text}{fg=white}
+        \usebeamercolor[fg]{normal text}
+        \begin{frame}
+    }
+    {\end{frame}}
+
+
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+
+\title{PRQL}
+\subtitle{a simple, powerful, pipelined SQL replacement}
+
+\author{Aljaž Mur Eržen}
+
+\institute{Compiler developer @EdgeDB}
+
+\date{\today}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+
+% I'm aljaz mur erzen, I work at EdgeDB as a compiler engineer and today I'll talk about prequel.
+% Prequel is a new language that was born out of frustrations with SQL and dataframe libraries.
+
+\end{frame}
+
+\begin{slide}{}
+
+% Before I get started, I'll briefly show you how does it look like, so you have a mental image of what we are dealing with.
+
+\begin{minted}{PRQL}
+from albums
+filter album_id > 100
+sort albums.title
+take 10
+join artists (==artist_id)
+select {
+    albums.album_id,
+    albums.title,
+    f"Artist name: {artist.name}",
+}
+\end{minted}
+
+% This query is meant to execute in a database that contains tables `albums` and `artists`.
+% <!-- explanation of what the query does -->
+
+% Cool. It looks similar to SQL and (also Python is some cases).
+% I do think that just by looking at this example you should be able to write simple queries yourself.
+
+\end{slide}
+
+
+\begin{slide}{}
+
+% But any time that I'm presented with a new language, my first question is "Why?".
+% Why dear god do we need more strange syntax, more new rules and more slightly different function names than what I'm already used to?   
+
+Why?
+
+% And this is a very relevant question, because any new tool (and even more so a language) has a significant transition cost associated with it.
+
+There are transtion costs!
+
+% So that is the main question I'll be answering today, and this is going to take some time.
+% From time to time it might seem like I'm bashing SQL for the fun of it, and this is partially true.
+% It also partially because PRQL was designed out of contempt toward data tools we were dealing with.
+
+\end{slide}
+    
+
+
+\begin{frame}
+\frametitle{Overview}
+\tableofcontents
+
+% A few notes:
+% - when I say "a database", I mean "a database management system" (mostly relational)
+
+\end{frame}
+
+\section{Flaws of SQL}
+
+\begin{slidefull}
+\Large A deef dive into
+
+\LARGE \textbf{Flaws of SQL}
+\end{slidefull}
+
+
+\begin{slide}{Origins of the relational model}
+
+% The relational model was introduced by Edgar F. Codd in a 1970 paper “A Relational Model of Data for Large Shared Data Banks”.
+
+% The proposed novelty was abstraction over data storage, so a user of "data banks" did not have to deal with where and how the data is stored, but work with data in its relational form.
+
+1970, Edgar F. Codd: abstraction over data storage
+
+$\rightarrow$ Tuple relational calculus
+
+% Soon after, people figured out that "tuple relational calculus" is not the most readable to regular users as it was expressed with greek letters and Donald D. Chamberlin and Raymond F. Boyce published a paper that introduced SEQUEL: A structured English query language.
+    
+% It was presented as having the same expressive power as the first order predicate calculus, on which the tuple relational calculus was based on. It was meant for "users without formal training in mathematics or computer programming" and "predominant use of the language would be for ad-hoc queries".
+
+1974, Donald D. Chamberlin \& Raymond F. Boyce: SEQUEL
+
+$\rightarrow$ Not a ``proper'' programming language
+
+% As in - SQL was not meant to be a "proper" programming language.
+
+\end{slide}
+
+
+\begin{slide}{Not really composable}
+
+\begin{minted}{SQL}
+SELECT album_id, COUNT(*) AS track_count
+FROM tracks GROUP BY album_id
+\end{minted}
+
+\framebreak
+
+\begin{minted}{SQL}
+SELECT i.album_id, i.track_count, a.artist_id
+FROM (
+  SELECT album_id, COUNT(*) AS track_count
+  FROM tracks GROUP BY album_id
+) AS i
+JOIN albums a USING (album_id)
+\end{minted}
+\end{slide}
+
+
+\begin{slide}{Patched syntax}
+
+\begin{minted}{SQL}
+SELECT
+  SUM(total)
+FROM
+  invoices
+\end{minted}
+
+\framebreak
+
+\begin{minted}{SQL}
+SELECT
+  total / SUM(total) OVER () AS normalized_total
+FROM
+  invoices
+\end{minted}
+
+\framebreak
+
+\begin{minted}{SQL}
+SELECT DISTNICT name
+FROM invoices
+\end{minted}
+
+\framebreak
+
+% If you look at this SWITCH statement, you will be
+% so taken back by its verbosity and screaming uppercase,
+% that you will not notice that it is actaully COBOL 
+
+\begin{minted}{SQL}
+SELECT EVALUATE TYPE-EMPLOYEE
+  WHEN "F" 
+    MOVE "FULL TIME" TO EMP-TYPE-PR
+  WHEN "P" 
+    MOVE "PART TIME" TO EMP-TYPE-PR
+  WHEN "C" 
+    MOVE "CONSULTANT" TO EMP-TYPE-PR
+  WHEN OTHER
+    MOVE "INVALID" TO EMP-TYPE-PR
+\end{minted}
+
+% And that's my point: SQL is old and lacking modern
+% language features such a f-strings and trailing commas.
+
+% And we cannot add them in, because they would break
+% existing parsing rules.
+
+Too much syntax
+
+... but also ...
+
+Not enough syntax
+
+\end{slide}
+
+
+\begin{slide}{Name resolution}
+
+\begin{minted}{SQL}
+SELECT title AS title_alias
+FROM albums
+\end{minted}
+
+\framebreak
+
+% clause    title   title_alias
+% WHERE     x       
+% GROUP BY  x       x
+% ORDER BY  x       x
+% HAVING    x
+
+\begin{minted}{SQL}
+SELECT title AS title_alias
+FROM albums
+WHERE title_alias LIKE 'Do I Wanna %'
+GROUP BY title_alias
+ORDER BY title_alias
+\end{minted}
+
+\framebreak
+
+More rules:
+
+-- ORDER BY positionals
+
+-- Correlated subqueries
+
+-- LATERAL
+
+\end{slide}
+
+
+\begin{slide}{Relations vs scalars}
+
+% SQL has two major categories of expressions:
+% relational and scalar
+
+% Both can be returned from a SELECT statement
+
+% Here, first returns a relation, second returns a scalar
+
+\begin{minted}{SQL}
+SELECT * FROM table
+
+SELECT count(*) FROM table
+\end{minted}
+
+\framebreak
+
+% They have the same syntacitcal structure
+% They cannot be used in all the same places
+
+\begin{minted}{SQL}
+SELECT emp_id FROM emp WHERE role = 'manager'
+\end{minted}
+
+\framebreak
+
+\begin{minted}{SQL}
+SELECT *
+FROM emp
+WHERE emp_id = (
+    SELECT emp_id FROM emp WHERE role = 'manager'
+)
+\end{minted}
+
+\end{slide}
+
+\begin{slide}{Relations cannot be ordered}
+
+\begin{minted}{SQL}
+SELECT * FROM albums ORDER BY title
+\end{minted}
+
+\framebreak
+
+\begin{minted}{SQL}
+SELECT
+  *,
+  ... AS my_col
+FROM (
+    SELECT * FROM albums ORDER BY title
+) inner
+\end{minted}
+
+\framebreak
+
+\begin{minted}{SQL}
+SELECT
+  *,
+  ROW_NUMBER()
+    OVER (ORDER BY artist_id) AS my_col
+FROM (
+    SELECT * FROM albums ORDER BY title
+) inner
+\end{minted}
+
+\framebreak
+
+SELECT returns an \textbf{ordered set}
+
+FROM pulls-in a \textbf{set}
+\framebreak
+
+\begin{minted}{SQL}
+SELECT
+  *,
+  ... AS my_col
+FROM (
+    SELECT *
+    FROM albums
+) inner
+ORDER BY title
+\end{minted}
+
+\begin{minted}{SQL}
+SELECT
+  *,
+  ... AS my_col
+FROM (
+    SELECT * FROM albums ORDER BY title LIMIT 10
+) inner
+ORDER BY title
+\end{minted}
+
+\end{slide}
+
+\begin{slide}{Identity of aggregation}
+
+\begin{minted}{SQL}
+SELECT SUM(cost) FROM expenses WHERE FALSE
+\end{minted}
+
+Two possible behaviors: NULL or 0
+
+Both valid
+
+\framebreak
+
+\begin{block}{}
+    \textbf{``Every marble in this bag is black''}
+
+    ... but the bag is empty.
+\end{block}
+
+Ancient greeks say FALSE
+
+Modern logic says TRUE
+
+SQL says NULL
+
+% \framebreak
+
+% This breaks stuff
+
+% \begin{minted}{SQL}
+% SELECT array_agg(value)
+% FROM jsonb_array_elements(my_jsonb_array)
+% \end{minted}
+
+\framebreak
+
+\textbf{Homomorphism of addition}
+
+\begin{verbatim}
+SUM([1]) + SUM([4, 5]) = SUM([1, 4, 5])
+
+                 1 + 9 = 10 
+\end{verbatim}
+
+\framebreak
+
+\begin{verbatim}
+SUM([1]) + SUM([]) = SUM([1])
+
+       1 +    ?    = 1
+
+        -> SUM([]) = 0
+\end{verbatim}
+
+\textbf{identity of addition}
+
+\framebreak
+
+\large
+\begin{verbatim}
+COUNT([])      = 0
+ARRAY_AGG([])  = []
+SUM([])        = 0
+ANY([])        = false
+EVERY([])      = true
+STRING_AGG([]) = ''
+\end{verbatim}
+
+\end{slide}
+
+
+\begin{slide}{Dialects}
+
+
+    % There is a lot of databases and each of them supports different language features.
+
+    % Most differences are on the syntactic level (TOP vs LIMIT, or DISTINCT ON).
+
+Differences in:
+
+- syntax (TOP vs LIMIT)
+
+    % There are differences in what functions are available.
+    
+- available functions
+
+    % There are differences in what data types are available (datetime in SQLite, arrays in MySQL).
+
+- available data types
+
+\framebreak
+
+% So there is no SQL language, just a class of languages that look similar.
+
+A class of languages
+
+There is a standard
+
+Slight diviations
+    
+\framebreak
+
+% ... and actaully, we could expect this. Each database has different:
+% - priorities on what's important,
+% - backward compatibility guarantees (you cannot just change behavior for the sake of standard conformity),
+% - limitations of what it is possible to implement with current architecture.
+
+Different:
+
+- priorities
+
+- backward compatibility guarantees
+
+- implementation limitations
+
+\framebreak
+
+% The problematic part is that the database interface does not exactly specify what it supports.
+% There is documentation, but man, imagine if you have a large query and your boss asks you
+% "can we execute this on some other database engine?".
+% Best you can say is "probably".
+
+% We lack a specification of all supported features of a database engine.
+
+No clear \& robust specification
+
+Compilers could:
+
+- adapt query to target database
+
+- produce error early
+
+% Something that you can run your compiler against, and would:
+% - produce a slightly different query to be executed, but with same behavior,
+% - produce errors like
+%   "this function is not supported by your database, use that function instead".
+
+% I'll talk about how we tackle this problem and out long-term plan.
+
+\end{slide}
+
+
+\section{Language for relations}
+\begin{slidefull}
+\Large Design of a new
+
+\LARGE \textbf{Language for relations}
+\end{slidefull}
+
+
+\begin{slide}{Tuple relational calculus}
+Relation $\sim$ a set of tuples
+
+\vspace{2em}
+
+\begin{minted}{SQL}
+SELECT track_id, name, title
+FROM tracks, albums
+WHERE tracks.album_id = albums.album_id
+\end{minted}
+\end{slide}
+
+\begin{slide}{Tuple relational calculus}
+Relation $\sim$ a set of tuples
+
+\vspace{2em}
+
+
+$T := \textrm{tracks}$
+
+$A := \textrm{albums}$
+
+$\pi_{track\_id, name, title}(T * A)$
+
+\end{slide}
+
+\begin{slide}{Data model}
+
+\end{slide}
+
+\begin{slide}{Functions}
+\end{slide}
+
+\begin{slide}{Transforms}
+\end{slide}
+
+\begin{slide}{Grouping}
+\end{slide}
+
+\begin{slide}{Nulls}
+\end{slide}
+
+\begin{slide}{Modern micro-features}
+\end{slide}
+
+
+\section{Compiling queries}
+\begin{slide}{The task of a query lanuage}
+\end{slide}
+
+\begin{slide}{Leaky abstractions}
+\end{slide}
+
+\begin{slide}{A better database interface}
+\end{slide}
+
+
+\section{PRQL, the project}
+\begin{slide}{prqlc and its IRs,}
+\end{slide}
+
+\begin{slide}{general architecture}
+\end{slide}
+
+\begin{slide}{how to use it}
+\end{slide}
+
+\begin{slide}{how to contribute}
+\end{slide}
+
+
+\end{document}

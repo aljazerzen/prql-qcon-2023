@@ -1,0 +1,16 @@
+.direnv/
+_minted-*/
+*.aux
+*.dvi
+*.fdb_latexmk
+*.fls
+*.log
+*.pdf
+*.synctex.gz
+*.fls
+*.log
+*.nav
+*.pyg
+*.snm
+*.toc
+*.out
