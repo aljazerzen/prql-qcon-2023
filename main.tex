@@ -90,6 +90,10 @@
 \usepackage{minted}
 \renewcommand{\MintedPygmentize}{./pygmentize.py}
 
+\usepackage{amssymb}
+\usepackage{pifont} % for checkmarks
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
 
 % fonts
 \usepackage[T1]{fontenc}
@@ -123,11 +127,11 @@
 
 
 \title{PRQL}
-\subtitle{a simple, powerful, pipelined SQL replacement}
+\subtitle{Pipelined Relational Query Language}
 
-\author{Aljaž Mur Eržen}
+\author{\large Aljaž Mur Eržen}
 
-\institute{Compiler developer @EdgeDB}
+\institute{\large Compiler developer @EdgeDB}
 
 \date{\today}
 
@@ -586,74 +590,572 @@ Compilers could:
 
 
 \begin{slide}{Tuple relational calculus}
+
+% In short, this is relational algebra:
+
 Relation $\sim$ a set of tuples
 
 \vspace{2em}
 
-\begin{minted}{SQL}
-SELECT track_id, name, title
-FROM tracks, albums
-WHERE tracks.album_id = albums.album_id
-\end{minted}
-\end{slide}
+$\pi_{track\_id, name, title}(R)$
 
-\begin{slide}{Tuple relational calculus}
-Relation $\sim$ a set of tuples
+$\sigma_{track\_id = 5}(R)$
 
-\vspace{2em}
+$R * S$
 
+% I'll go over fundamentals of PRQL syntax and semantics.
+% I want to show that if you go and design a language that is able to express relational algebra,
+% - using modern understanding of type systems,
+% - aim for it to be minimal and ergonomic,
+% - using syntax similar to other popular languages right now
+% ... you will end up with the design of PRQL (or something very similar).
 
-$T := \textrm{tracks}$
-
-$A := \textrm{albums}$
-
-$\pi_{track\_id, name, title}(T * A)$
+% In other words, the design decisions we took are obvious choices within our requirements.   
 
 \end{slide}
 
 \begin{slide}{Data model}
 
+Basic data types: bool, int, float, str
+
+Tuples: \begin{verbatim}{ {my_int = 5, 4.2, my_bool = true} }\end{verbatim}
+
+- named fields,
+- different types,
+- static number of fields
+
+Arrays: \begin{verbatim}{ [1, 2, 10, -3] }\end{verbatim}
+
+- unnamed items
+- items have the same type,
+- dynamic number of items
+
+Relations $\sim$ an array of tuples 
+
+\begin{minted}{PRQL}
+[
+    {my_int = 5 , 4.2, my_bool = true},
+    {my_int = -2, 6.1, my_bool = false},
+    {my_int = 12, 3.0, my_bool = false},
+]
+\end{minted}
+
+% Not exactly the same as relational model.
+% - arrays are ordered,
+% - tuple fields can be unnamed,
+
+\end{slide}
+
+\begin{slide}{Declarations}
+
+\begin{minted}{PRQL}
+let a = 5;
+
+let b = a + 1;
+\end{minted}
+
 \end{slide}
 
 \begin{slide}{Functions}
+\begin{minted}{PRQL}
+let add_one = x -> x + 1
+
+let add = x y -> x + y
+
+let five = (add_one 4)
+
+let six = (add 4 2)
+\end{minted}
+
+\framebreak
+
+\begin{minted}{PRQL}
+let seven = (5 | add_one | add_one)
+
+let seven = (
+    5
+    add_one
+    add_one
+)
+\end{minted}
+
 \end{slide}
 
 \begin{slide}{Transforms}
+
+% Ok, so know how functions behave and how they can be used.
+% I'll now show how we can use this same function semantics to operate on relations.
+% Functions that operate on relations are called transforms. 
+
+% Let's say that there is a variable invoices, which is a relation, doesn't where it's data comes from.
+% Now we can define a variable res, which will call function filter,
+% applied to a row expression and the invoices relation.
+
+\begin{minted}{PRQL}
+let invoices = ...
+
+let main = (filter (total > 10) invoices)
+\end{minted}
+
+% Now let's simplify this notation a bit.
+% First, let's use pipeline notation for filter
+
+\begin{minted}{PRQL}
+let invoices = ...
+
+let main = (invoices | filter (total > 10))
+\end{minted}
+
+% Actually, the longer one 
+
+\begin{minted}{PRQL}
+let invoices = ...
+
+let main = (
+    invoices
+    filter (total > 10)
+)
+\end{minted}
+
+% If you look at the `res` variable - that is the main var that we want to return from the query.
+% PRQL has a rule that if such variables are last declarations in a query,
+% they can omit the `let main` and be just plain expressions
+
+\begin{minted}{PRQL}
+let invoices = ...
+
+invoices
+filter (total > 10)
+\end{minted}
+
+% Because our `invoices` relation is actaully stored in database table,
+% we can use `from` function, which will pull the relation from the database.
+
+\begin{minted}{PRQL}
+from invoices
+filter (total > 10)
+\end{minted}
+
+% As the last touch, the parenthesis are not really needed.
+
+\begin{minted}{PRQL}
+from invoices
+filter total > 10
+\end{minted}
+
+% And this is an ideomatic PRQL query.
+% Built on a few basic syntactic and semantic rules.
+% With formal specifiation that would probably fit on a few pages.
+
 \end{slide}
 
+\begin{slide}{Top to bottom}
+
+\begin{minted}{PRQL}
+from albums
+filter album_id > 100
+sort albums.title
+\end{minted}
+
+\begin{minted}{PRQL}
+from albums
+filter album_id > 100
+sort albums.title
+take 10
+\end{minted}
+
+\begin{minted}{PRQL}
+from albums
+filter album_id > 100
+sort albums.title
+take 10
+join artists (==artist_id)
+\end{minted}
+
+
+\begin{minted}{PRQL}
+from albums
+filter album_id > 100
+sort albums.title
+take 10
+join artists (albums.artist_id == artists.artist_id)
+\end{minted}
+
+\begin{minted}{PRQL}
+from albums
+filter album_id > 100
+sort albums.title
+take 10
+join artists (==artist_id)
+select {
+    albums.album_id,
+    albums.title,
+    f"Artist name: {artist.name}",
+}
+\end{minted}
+
+- Top to bottom
+- Convienient for exploration
+- Lazy evaluation
+- Extract a variable
+- Extract a function
+
+\begin{minted}{PRQL}
+let take_cheapest = n rel -> (
+    rel
+    sort unit_price
+    take n
+)
+
+from tracks
+take_cheapest 5
+\end{minted}
+
+\end{slide}
+
+
 \begin{slide}{Grouping}
+
+% There is an important aspect to PRQL's design, which we call
+% transform orthogonality. It means that transforms (functions on relations)
+% should do one thing, and do it well. Here this would mean that transforms
+% have invariants - contract that says a property of the relation will not be changed.
+
+- \textbf{\texttt{filter}} will not change columns
+
+- \textbf{\texttt{derive}} \& \textbf{\texttt{select}} will not change number of rows
+
+% this is not true for SQL clauses: SELECT may also imply aggregation
+
+- \textbf{\texttt{aggregate}} will produce exactly one row
+
+% This invariants make transforms compose nicely and it keeps the number of transforms low.
+
+% A great example of this is aggregate:
+
+\begin{minted}{PRQL}
+from expenses
+aggregate {total = sum cost}
+
+
+{total = 431.22}
+\end{minted}
+
+% aggregate is a transform
+% sum is an agggregation function
+% total is the sum of column cost
+
+% let's say we want expenses by each value in dept_no column
+
+% we partition the relation by values of dept_no column
+% we apply the aggregate function to each of the partitions
+% we combine the partitions back together, prefixing with dept_no column
+
+\begin{minted}{PRQL}
+from expenses
+group dept_no (
+    aggregate {total = sum cost}    
+)
+
+{dept_no = 1, total = 331.00}
+{dept_no = 2, total = 100.22}
+\end{minted}
+
+\begin{minted}{PRQL}
+from expenses
+group dept_no (
+    take 1    
+)
+\end{minted}
+
+\begin{minted}{PRQL}
+from expenses
+group dept_no (
+    sort {-cost}
+    take 1
+)
+\end{minted}
+
+\begin{minted}{PRQL}
+from expenses
+group expenses.* (
+    take 1    
+)
+\end{minted}
+
+
 \end{slide}
 
 \begin{slide}{Nulls}
+
+% This was all "big picture" stuff - fundamentals of PRQL design
+% They provide a shift in thinking when working with relations.
+
+% Now it's time to talk about little things that make PRQL ergonomic.
+
+% If you know about SQL behavior, you know it makes sense on some level,
+% but you also know that it is inconvenient.
+
+% In PRQL, null is a value.
+
+\begin{minted}{PRQL}
+null == null  # true
+
+my_col == null
+\end{minted}
+
+\begin{minted}{SQL}
+my_col IS NULL
+\end{minted}
+
 \end{slide}
 
 \begin{slide}{Modern micro-features}
-\end{slide}
 
+\begin{minted}{PRQL}
+from employees
+derive {
+  age = @2023-01-31 - birth_date,
+  full_name = f"{first_name} {last_name}",
+  manager = reports_to ?? "No one",
+#  is_fired = "No",
+  salary = 1_000_000,
+}
+\end{minted}
+
+\end{slide}
 
 \section{Compiling queries}
-\begin{slide}{The task of a query lanuage}
+\begin{slidefull}
+\Large Challanges of
+
+\LARGE \textbf{Compiling queries}
+\end{slidefull}
+
+%%% --- omitted ---
+%%% Integrating a language into a database comes with a few downsides.
+%%% 
+%%% If you reuse some existing language (like SQL):
+%%% - you have to implement it with all of its quirks that people are already used to,
+%%% - you will certainly diviate from the language at some point,
+%%% 
+%%% If you create a new language:
+%%% - you have to design a language alogside an already complex system,
+%%% - it will lack a few features,
+%%% - people will have to learn it,
+
+
+\begin{slide}{SQL as a compilation target}
+
+\large
+
+% Now I need to talk about the elephant in the room. How is this new language executed?
+
+How is this language executed?
+
+% Short answer: we have a compiler to SQL
+
+% As I've said, it is meant to replace SQL, but this is only partially true.
+% SQL is two things:
+% - a database interface
+% - a language for querying 
+
+\xmark \hspace{0.5em} database interface
+
+% well it could, but still not all SQL statments (REINDEX, CREATE, ...)
+% every database would have to add support for it
+
+% What I mean, is that it replaces the language that people use to express their data transformations.
+
+\cmark \hspace{0.4em} a query language
+
+% What is a query language, why do we even need it?
+
 \end{slide}
+
+
+\begin{slide}{The task of a query lanuage}
+
+Imagine a database without a query language.
+
+% Well, you'd need some kind of interface, so imagine there is an API where you specify a table that you want to query.
+
+% That would be equivalent to issuing `SELECT * FROM albums`
+
+\begin{minted}{SQL}
+SELECT * FROM albums
+\end{minted}
+
+% and then filter and join in your super fast Rust code.
+
+... and then transform in client code.
+
+% That would be super slow, as it would transfer way too much data to the client, just to be thrown away later.
+
+$\rightarrow$ super slow
+
+% To be fair, we could also include the `WHERE` clause in our API, but that still doesn't solve all the problems.
+
+\framebreak
+
+% A more extreme example is this,
+% where we do some processing on our data and return a single number.
+
+Extreme example:
+
+\begin{minted}{SQL}
+SELECT COUNT(*)
+FROM albums
+WHERE title LIKE 'The %'
+\end{minted}
+
+\framebreak
+
+% What you want is for this processing to happen as close to the data as possible.
+
+\textbf{Processing should be close to data}
+
+% This is the ideal scenario because:
+
+- minimal data transfer
+
+% this is obvious, if we don't transfer data from the database to the client there is less things to do.
+%  and as the saying goes, best way to make a program faster is to do less.
+
+- parallelism
+% your database might be enormous, spanned over multiple nodes.
+% this is possible to achieve with general programming languages,
+% but it is not easy.
+
+- vectorization
+% some operations (eg. a sum of two columns) can be compiled to vectorized CPU instructions.
+% this gives enormous performance boost (see DuckDB or Polars)
+
+%%% --- omitted ---
+%%% As people who worked with MapReduce know, this query is embarisingly simple to paralelize.
+
+\framebreak
+
+% So essentially, we are giving the database a program that we want executed and the database does that for you, before returning the data.
+
+% Which makes the database an execution platform or a compilation target.
+
+Databases are:
+
+- execution platforms
+
+- compilation targets
+
+Analogous to amd64, JVM
+
+% Similarly as when:
+% - a Rust program compiles to a binary to be executed on a amd64 processor, for example, and
+% - a Java program compiles to byte code to be executed in JVM,
+% - -> we compile PRQL to SQL to be executed in a database.
+
+\end{slide}
+
 
 \begin{slide}{Leaky abstractions}
+
+% We want the database interface to be transparent to the user.
+
+Database interface should be transparent
+
+Currently, this is not the case:
+
+- invalid SQL
+
+- sub-optimal SQL
+
+- runtime errors
+
 \end{slide}
 
-\begin{slide}{A better database interface}
-\end{slide}
+%%% -- omitted --
+%%% \begin{slide}{A better database interface}
+%%% When an SQL query is received by a database, it hits another compiler. It is parsed, desugared, resolved and compiled into a query plan - an object the database can then execute.
+%%% 
+%%% So when we started thinking about SQL as a compilation target, we saw a few things that could be improved, if we were replace the SQL with a more rigid query representation.
+%%% 
+%%% Because the interaction with the database happens at runtime, we would want to:
+%%% - minimize runtime query processing (to improve performance and simplify tooling),
+%%% - remove ambiguity,
+%%% - easy to extend,
+%%% 
+%%% substrait.io
+%%% \end{slide}
 
 
 \section{PRQL, the project}
-\begin{slide}{prqlc and its IRs,}
+\begin{slidefull}
+\LARGE \textbf{PRQL, the project}
+
+\Large -- an opensource effort
+\end{slidefull}
+
+% 2022: PRQL started as a proposal for a new database query language
+% 
+
+\begin{slide}{prqlc and its IRs}
+
+prqlc: compiler from PRQL to SQL
+
+targets: sql.postgres, sql.sqlite, sql.duckdb, sql.mysql, sql.clickhouse
+
+bindings for C, Python, JS, Java, .NET, PHP
+
+\framebreak
+
+Don't connect, infer
+
+Fail early
+
+\includegraphics[width=\textwidth]{images/error_message.png}
+
 \end{slide}
 
-\begin{slide}{general architecture}
+\begin{slide}{Architecture}
+
+PRQL $\rightarrow$ PL $\rightarrow$ RQ $\rightarrow$ SQL
+
+% TODO: example of PL and RQ  
+
 \end{slide}
 
-\begin{slide}{how to use it}
+\begin{slide}{Licence}
+
+% Language spec, docs, prqlc is open source
+
+Apache
+
+% all commits are on GH repo
+% design is discussed in GH issues
+% any PR is welcome 
+
+Open community
+
+% a language like this is hard to monetize
+% even worse: affiliation with VC would have negative impact on adopton
+% especially by opensource projects  
+% thus: a slow but steady development pace
+
+No plans to monetize
+
 \end{slide}
 
-\begin{slide}{how to contribute}
+\begin{slide}{How to use it}
+
+Playground
+
+VSCode extension
+
+Jupyter
+
 \end{slide}
 
+\begin{slide}{How to contribute}
+
+\end{slide}
 
 \end{document}
