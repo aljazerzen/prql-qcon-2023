@@ -37,7 +37,7 @@
 % \usetheme{Dresden}
 % \usetheme{Frankfurt}
 % \usetheme{Goettingen}
-% \usetheme{Hannovers}
+% \usetheme{Hannover}
 % \usetheme{Ilmenau}
 % \usetheme{JuanLesPins}
 % \usetheme{Luebeck}
@@ -47,10 +47,18 @@
 % \usetheme{Montpellier}
 % \usetheme{PaloAlto}
 % \usetheme{Pittsburgh}
-\usetheme{Rochester}
+% \usetheme{Rochester}
 % \usetheme{Singapore}
 % \usetheme{Szeged}
 % \usetheme{Warsaw}
+
+% \setbeamercolor*{frametitle}{parent=palette primary}
+% \setbeamerfont{block title}{size={}}
+
+\setbeamertemplate{frametitle}{
+    \vspace{1em}
+    \textbf{\insertframetitle}
+}
 
 % As well as themes, the Beamer class has a number of color themes
 % for any slide theme. Uncomment each of these in turn to see how it
@@ -84,6 +92,9 @@
 \setbeamercolor*{palette quaternary}{bg=lightblue}
 \setbeamercolor{section in toc}{fg=darkblue,bg=white}
 
+% \setbeamercolor{background canvas}{bg=black}
+% \setbeamercolor{normal text}{fg=white}
+
 \usepackage{graphicx} % Allows including images
 \usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
 \usepackage{hyperref}
@@ -101,8 +112,10 @@
 \usefonttheme[onlymath]{serif}
 \usefonttheme{structurebold} 
 
+% frame breaks don't add numbers to slide title
 \setbeamertemplate{frametitle continuation}{}
 
+% large split between lines
 \setlength{\parskip}{\baselineskip}
 
 \newenvironment{slide}[1]
@@ -597,6 +610,8 @@ Relation $\sim$ a set of tuples
 
 \vspace{2em}
 
+\Large
+
 $\pi_{track\_id, name, title}(R)$
 
 $\sigma_{track\_id = 5}(R)$
@@ -616,19 +631,47 @@ $R * S$
 
 \begin{slide}{Data model}
 
-Basic data types: bool, int, float, str
+{\Large Basic data types}
 
-Tuples: \begin{verbatim}{ {my_int = 5, 4.2, my_bool = true} }\end{verbatim}
+\vspace{-1em}
+\begin{verbatim}
+bool, int, float, str
+\end{verbatim}
+\vspace{-1em}
 
-- named fields,
-- different types,
-- static number of fields
+\framebreak
 
-Arrays: \begin{verbatim}{ [1, 2, 10, -3] }\end{verbatim}
 
-- unnamed items
-- items have the same type,
-- dynamic number of items
+{\Large Tuples}
+
+\vspace{-1em}
+\begin{verbatim}{my_int = 5, 4.2, my_bool = true}\end{verbatim}
+\vspace{-1em}
+
+\begin{itemize}
+\item named fields
+\item different types
+\item static number of fields
+\end{itemize}
+
+\framebreak
+
+
+{\Large Arrays}
+
+\vspace{-1em}
+\begin{verbatim}[1, 2, 10, -3]\end{verbatim}
+\vspace{-1em}
+
+\begin{itemize}
+\item unnamed items
+\item items have the same type
+\item dynamic number of items
+\end{itemize}
+
+
+\framebreak
+
 
 Relations $\sim$ an array of tuples 
 
@@ -649,9 +692,9 @@ Relations $\sim$ an array of tuples
 \begin{slide}{Declarations}
 
 \begin{minted}{PRQL}
-let a = 5;
+let a = 5
 
-let b = a + 1;
+let b = a + 1
 \end{minted}
 
 \end{slide}
@@ -661,7 +704,11 @@ let b = a + 1;
 let add_one = x -> x + 1
 
 let add = x y -> x + y
+\end{minted}
 
+\framebreak
+
+\begin{minted}{PRQL}
 let five = (add_one 4)
 
 let six = (add 4 2)
@@ -700,6 +747,7 @@ let main = (filter (total > 10) invoices)
 % Now let's simplify this notation a bit.
 % First, let's use pipeline notation for filter
 
+\framebreak
 \begin{minted}{PRQL}
 let invoices = ...
 
@@ -708,6 +756,7 @@ let main = (invoices | filter (total > 10))
 
 % Actually, the longer one 
 
+\framebreak
 \begin{minted}{PRQL}
 let invoices = ...
 
@@ -721,6 +770,7 @@ let main = (
 % PRQL has a rule that if such variables are last declarations in a query,
 % they can omit the `let main` and be just plain expressions
 
+\framebreak
 \begin{minted}{PRQL}
 let invoices = ...
 
@@ -731,6 +781,7 @@ filter (total > 10)
 % Because our `invoices` relation is actaully stored in database table,
 % we can use `from` function, which will pull the relation from the database.
 
+\framebreak
 \begin{minted}{PRQL}
 from invoices
 filter (total > 10)
@@ -738,6 +789,7 @@ filter (total > 10)
 
 % As the last touch, the parenthesis are not really needed.
 
+\framebreak
 \begin{minted}{PRQL}
 from invoices
 filter total > 10
@@ -757,12 +809,16 @@ filter album_id > 100
 sort albums.title
 \end{minted}
 
+\framebreak
+
 \begin{minted}{PRQL}
 from albums
 filter album_id > 100
 sort albums.title
 take 10
 \end{minted}
+
+\framebreak
 
 \begin{minted}{PRQL}
 from albums
@@ -772,6 +828,7 @@ take 10
 join artists (==artist_id)
 \end{minted}
 
+\framebreak
 
 \begin{minted}{PRQL}
 from albums
@@ -780,6 +837,8 @@ sort albums.title
 take 10
 join artists (albums.artist_id == artists.artist_id)
 \end{minted}
+
+\framebreak
 
 \begin{minted}{PRQL}
 from albums
@@ -794,11 +853,17 @@ select {
 }
 \end{minted}
 
-- Top to bottom
+\framebreak
+
 - Convienient for exploration
+
 - Lazy evaluation
+
 - Extract a variable
+
 - Extract a function
+
+\framebreak
 
 \begin{minted}{PRQL}
 let take_cheapest = n rel -> (
@@ -833,6 +898,8 @@ take_cheapest 5
 
 % A great example of this is aggregate:
 
+\framebreak
+
 \begin{minted}{PRQL}
 from expenses
 aggregate {total = sum cost}
@@ -844,6 +911,8 @@ aggregate {total = sum cost}
 % aggregate is a transform
 % sum is an agggregation function
 % total is the sum of column cost
+
+\framebreak
 
 % let's say we want expenses by each value in dept_no column
 
@@ -861,12 +930,16 @@ group dept_no (
 {dept_no = 2, total = 100.22}
 \end{minted}
 
+\framebreak
+
 \begin{minted}{PRQL}
 from expenses
 group dept_no (
     take 1    
 )
 \end{minted}
+
+\framebreak
 
 \begin{minted}{PRQL}
 from expenses
@@ -875,6 +948,8 @@ group dept_no (
     take 1
 )
 \end{minted}
+
+\framebreak
 
 \begin{minted}{PRQL}
 from expenses
@@ -899,18 +974,20 @@ group expenses.* (
 % In PRQL, null is a value.
 
 \begin{minted}{PRQL}
+# PRQL
 null == null  # true
 
 my_col == null
 \end{minted}
 
 \begin{minted}{SQL}
+-- SQL
 my_col IS NULL
 \end{minted}
 
 \end{slide}
 
-\begin{slide}{Modern micro-features}
+\begin{slide}{Micro-features}
 
 \begin{minted}{PRQL}
 from employees
@@ -1097,7 +1174,7 @@ Currently, this is not the case:
 % 2022: PRQL started as a proposal for a new database query language
 % 
 
-\begin{slide}{prqlc and its IRs}
+\begin{slide}{The compiler and its IRs}
 
 prqlc: compiler from PRQL to SQL
 

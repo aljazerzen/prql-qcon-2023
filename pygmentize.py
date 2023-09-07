@@ -16,7 +16,9 @@ class PRQLLexer(RegexLexer):
             (r'[a-zA-Z_][a-zA-Z_0-9]*:', Name.Decorator),
             (r'[a-zA-Z_][a-zA-Z_0-9]*', Name),
             (r'\s+', Whitespace),
-            (r'[+\-*/%{}[\].><=(),]+', Punctuation),
+            (r'#.*', Comment),
+            (r'@[0-9\-]+', Literal.String),
+            (r'[+\-*/%{}[\].><=(),|]+|(\?\?)', Punctuation),
         ]
     }
 
