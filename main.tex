@@ -612,7 +612,7 @@ Compilers could:
 
 Relation $\sim$ a set of tuples
 
-\vspace{2em}
+\vspace{1em}
 
 \Large
 
@@ -637,20 +637,20 @@ $R * S$
 
 {\Large Basic data types}
 
-\vspace{-1em}
+{\large\vspace{-1em}
 \begin{verbatim}
 bool, int, float, str
 \end{verbatim}
-\vspace{-1em}
+\vspace{-1em}}
 
 \framebreak
 
 
 {\Large Tuples}
 
-\vspace{-1em}
+{\large\vspace{-1em}
 \begin{verbatim}{my_int = 5, 4.2, my_bool = true}\end{verbatim}
-\vspace{-1em}
+\vspace{-1em}}
 
 \begin{itemize}
 \item named fields
@@ -663,9 +663,9 @@ bool, int, float, str
 
 {\Large Arrays}
 
-\vspace{-1em}
+{\large\vspace{-1em}
 \begin{verbatim}[1, 2, 10, -3]\end{verbatim}
-\vspace{-1em}
+\vspace{-1em}}
 
 \begin{itemize}
 \item unnamed items
@@ -676,8 +676,9 @@ bool, int, float, str
 
 \framebreak
 
+\large
 
-Relations $\sim$ an array of tuples 
+Relation $:=$ an array of tuples 
 
 \begin{minted}{PRQL}
 [
@@ -735,7 +736,7 @@ let seven = (
 \end{slide}
 
 \begin{slide}{Transforms}
-\large
+
 % Ok, so know how functions behave and how they can be used.
 % I'll now show how we can use this same function semantics to operate on relations.
 % Functions that operate on relations are called transforms. 
@@ -743,6 +744,10 @@ let seven = (
 % Let's say that there is a variable invoices, which is a relation, doesn't where it's data comes from.
 % Now we can define a variable res, which will call function filter,
 % applied to a row expression and the invoices relation.
+
+Transform $:=$ a function on relations
+
+\large
 
 \begin{minted}{PRQL}
 let invoices = ...
