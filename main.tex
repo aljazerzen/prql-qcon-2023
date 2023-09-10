@@ -91,6 +91,7 @@
 \setbeamercolor*{palette primary}{bg=darkblue,fg=white}
 \setbeamercolor*{palette quaternary}{bg=lightblue}
 \setbeamercolor{section in toc}{fg=darkblue,bg=white}
+\setbeamercolor{title}{fg=white,bg=darkblue}
 
 % \setbeamercolor{background canvas}{bg=black}
 % \setbeamercolor{normal text}{fg=white}
@@ -142,11 +143,14 @@
 \title{PRQL}
 \subtitle{Pipelined Relational Query Language}
 
+\titlegraphic{\vspace*{-2em} \includegraphics[height=4em]{./images/prql-logo.pdf}}
+% \logo{\includegraphics[width=2em]{./images/prql-logo.pdf}}
+
 \author{\large Aljaž Mur Eržen}
 
-\institute{\large Compiler developer @EdgeDB}
+\institute{\small Compiler developer @EdgeDB}
 
-\date{\today}
+\date{}
 
 \begin{document}
 
@@ -185,7 +189,7 @@ select {
 
 
 \begin{slide}{}
-
+\Large
 % But any time that I'm presented with a new language, my first question is "Why?".
 % Why dear god do we need more strange syntax, more new rules and more slightly different function names than what I'm already used to?   
 
@@ -193,7 +197,7 @@ Why?
 
 % And this is a very relevant question, because any new tool (and even more so a language) has a significant transition cost associated with it.
 
-There are transtion costs!
+There are transition costs!
 
 % So that is the main question I'll be answering today, and this is going to take some time.
 % From time to time it might seem like I'm bashing SQL for the fun of it, and this is partially true.
@@ -285,7 +289,7 @@ FROM
 \framebreak
 
 \begin{minted}{SQL}
-SELECT DISTNICT name
+SELECT DISTINCT name
 FROM invoices
 \end{minted}
 
@@ -293,7 +297,7 @@ FROM invoices
 
 % If you look at this SWITCH statement, you will be
 % so taken back by its verbosity and screaming uppercase,
-% that you will not notice that it is actaully COBOL 
+% that you will not notice that it is actually COBOL 
 
 \begin{minted}{SQL}
 SELECT EVALUATE TYPE-EMPLOYEE
@@ -375,7 +379,7 @@ SELECT count(*) FROM table
 
 \framebreak
 
-% They have the same syntacitcal structure
+% They have the same syntactical structure
 % They cannot be used in all the same places
 
 \begin{minted}{SQL}
@@ -550,11 +554,11 @@ A class of languages
 
 There is a standard
 
-Slight diviations
+Slight deviations
     
 \framebreak
 
-% ... and actaully, we could expect this. Each database has different:
+% ... and actually, we could expect this. Each database has different:
 % - priorities on what's important,
 % - backward compatibility guarantees (you cannot just change behavior for the sake of standard conformity),
 % - limitations of what it is possible to implement with current architecture.
@@ -677,7 +681,7 @@ Relations $\sim$ an array of tuples
 
 \begin{minted}{PRQL}
 [
-    {my_int = 5 , 4.2, my_bool = true},
+    {my_int =  5, 4.2, my_bool = true},
     {my_int = -2, 6.1, my_bool = false},
     {my_int = 12, 3.0, my_bool = false},
 ]
@@ -690,7 +694,7 @@ Relations $\sim$ an array of tuples
 \end{slide}
 
 \begin{slide}{Declarations}
-
+\Large
 \begin{minted}{PRQL}
 let a = 5
 
@@ -700,6 +704,7 @@ let b = a + 1
 \end{slide}
 
 \begin{slide}{Functions}
+\Large
 \begin{minted}{PRQL}
 let add_one = x -> x + 1
 
@@ -725,11 +730,12 @@ let seven = (
     add_one
 )
 \end{minted}
+\vspace*{-2em}
 
 \end{slide}
 
 \begin{slide}{Transforms}
-
+\large
 % Ok, so know how functions behave and how they can be used.
 % I'll now show how we can use this same function semantics to operate on relations.
 % Functions that operate on relations are called transforms. 
@@ -778,7 +784,7 @@ invoices
 filter (total > 10)
 \end{minted}
 
-% Because our `invoices` relation is actaully stored in database table,
+% Because our `invoices` relation is actually stored in database table,
 % we can use `from` function, which will pull the relation from the database.
 
 \framebreak
@@ -795,9 +801,9 @@ from invoices
 filter total > 10
 \end{minted}
 
-% And this is an ideomatic PRQL query.
+% And this is an idiomatic PRQL query.
 % Built on a few basic syntactic and semantic rules.
-% With formal specifiation that would probably fit on a few pages.
+% With formal specification that would probably fit on a few pages.
 
 \end{slide}
 
@@ -855,7 +861,7 @@ select {
 
 \framebreak
 
-- Convienient for exploration
+- Convenient for exploration
 
 - Lazy evaluation
 
@@ -879,37 +885,56 @@ take_cheapest 5
 \end{slide}
 
 
-\begin{slide}{Grouping}
+\begin{slide}{Orthogonal}
+
+\begin{minted}{PRQL}
+from expenses
+filter dept == "Sales"
+aggregate {total = sum cost}
+filter total > 100.00
+\end{minted}
+
+\large
+\texttt{WHERE} $\mapsto$ \texttt{filter}
+\hfill
+\texttt{HAVING} $\mapsto$ \texttt{filter}
+
+\framebreak
 
 % There is an important aspect to PRQL's design, which we call
 % transform orthogonality. It means that transforms (functions on relations)
 % should do one thing, and do it well. Here this would mean that transforms
 % have invariants - contract that says a property of the relation will not be changed.
 
-- \textbf{\texttt{filter}} will not change columns
+Transform invariants:
 
-- \textbf{\texttt{derive}} \& \textbf{\texttt{select}} will not change number of rows
+- \texttt{filter} will not change columns
+
+- \texttt{derive} \& \texttt{select} will not change number of rows
 
 % this is not true for SQL clauses: SELECT may also imply aggregation
 
-- \textbf{\texttt{aggregate}} will produce exactly one row
+- \texttt{aggregate} will produce exactly one row
 
 % This invariants make transforms compose nicely and it keeps the number of transforms low.
 
 % A great example of this is aggregate:
+\end{slide}
 
-\framebreak
+\begin{slide}{Grouping}
 
 \begin{minted}{PRQL}
 from expenses
 aggregate {total = sum cost}
 
 
-{total = 431.22}
+[
+    {total = 431.22},
+]
 \end{minted}
 
 % aggregate is a transform
-% sum is an agggregation function
+% sum is an aggregation function
 % total is the sum of column cost
 
 \framebreak
@@ -922,42 +947,69 @@ aggregate {total = sum cost}
 
 \begin{minted}{PRQL}
 from expenses
-group dept_no (
+group dept (
     aggregate {total = sum cost}    
 )
 
-{dept_no = 1, total = 331.00}
-{dept_no = 2, total = 100.22}
+[
+  {dept = "Sales",      total = 331.00},
+  {dept = "Accounting", total = 100.22},
+]
 \end{minted}
 
 \framebreak
 
 \begin{minted}{PRQL}
 from expenses
-group dept_no (
+group dept (
     take 1    
 )
+
+[
+  {dept = "Sales",      id = 33, cost =  5.30},
+  {dept = "Accounting", id = 45, cost = 12.22},
+]
 \end{minted}
 
 \framebreak
 
 \begin{minted}{PRQL}
 from expenses
-group dept_no (
+group dept (
     sort {-cost}
+    take 1
+)
+
+[
+  {dept = "Sales",      id = 33, cost = 5.30},
+  {dept = "Accounting", id = 16, cost = 1.22},
+]
+\end{minted}
+
+\framebreak
+
+\large
+\begin{minted}{PRQL}
+from expenses
+group expenses.* (
     take 1
 )
 \end{minted}
 
 \framebreak
 
+\large
 \begin{minted}{PRQL}
 from expenses
 group expenses.* (
-    take 1    
+    take 1
 )
 \end{minted}
 
+\begin{minted}{SQL}
+SELECT DISTINCT *
+FROM expenses
+\end{minted}
 
 \end{slide}
 
@@ -972,6 +1024,8 @@ group expenses.* (
 % but you also know that it is inconvenient.
 
 % In PRQL, null is a value.
+
+\large
 
 \begin{minted}{PRQL}
 # PRQL
@@ -1004,7 +1058,7 @@ derive {
 
 \section{Compiling queries}
 \begin{slidefull}
-\Large Challanges of
+\Large Challenges of
 
 \LARGE \textbf{Compiling queries}
 \end{slidefull}
@@ -1039,7 +1093,7 @@ How is this language executed?
 
 \xmark \hspace{0.5em} database interface
 
-% well it could, but still not all SQL statments (REINDEX, CREATE, ...)
+% well it could, but still not all SQL statements (REINDEX, CREATE, ...)
 % every database would have to add support for it
 
 % What I mean, is that it replaces the language that people use to express their data transformations.
@@ -1109,7 +1163,7 @@ WHERE title LIKE 'The %'
 % this gives enormous performance boost (see DuckDB or Polars)
 
 %%% --- omitted ---
-%%% As people who worked with MapReduce know, this query is embarisingly simple to paralelize.
+%%% As people who worked with MapReduce know, this query is embarrassingly simple to parallelize.
 
 \framebreak
 
@@ -1151,7 +1205,7 @@ Currently, this is not the case:
 
 %%% -- omitted --
 %%% \begin{slide}{A better database interface}
-%%% When an SQL query is received by a database, it hits another compiler. It is parsed, desugared, resolved and compiled into a query plan - an object the database can then execute.
+%%% When an SQL query is received by a database, it hits another compiler. It is parsed, de-sugared, resolved and compiled into a query plan - an object the database can then execute.
 %%% 
 %%% So when we started thinking about SQL as a compilation target, we saw a few things that could be improved, if we were replace the SQL with a more rigid query representation.
 %%% 
@@ -1188,7 +1242,9 @@ Don't connect, infer
 
 Fail early
 
-\includegraphics[width=\textwidth]{images/error_message.png}
+\vspace*{-0.5em}
+\includegraphics[width=0.9\textwidth]{images/error_message.png}
+\vspace*{-3em}
 
 \end{slide}
 
@@ -1213,7 +1269,7 @@ Apache
 Open community
 
 % a language like this is hard to monetize
-% even worse: affiliation with VC would have negative impact on adopton
+% even worse: affiliation with VC would have negative impact on adoption
 % especially by opensource projects  
 % thus: a slow but steady development pace
 
@@ -1221,17 +1277,41 @@ No plans to monetize
 
 \end{slide}
 
-\begin{slide}{How to use it}
-
-Playground
-
-VSCode extension
-
-Jupyter
-
+\begin{slide}{Check it out: playground}
+\includegraphics[width=0.8\textwidth]{images/playground.png}
 \end{slide}
 
-\begin{slide}{How to contribute}
+\begin{slide}{Check it out: VSCode extension}
+\includegraphics[width=0.7\textwidth]{images/vscode-ext.png}
+\end{slide}
+
+\begin{slide}{Check it out: prql-query - pq}
+\includegraphics[width=0.7\textwidth]{images/pq.png}
+\end{slide}
+
+\begin{slide}{Check it out}
+
+\begin{columns}
+    \begin{column}{0.2\textwidth}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+        \begin{verbatim}
+        pip install pyprql
+        install.packages("prqlr")
+        npm install prql
+        cargo add prql-compiler
+        \end{verbatim}
+    \end{column}
+\end{columns}
+
+\vspace*{-2em}
+\large
+
+https://prql-lang.org
+
+https://github.com/PRQL/prql
+
+https://discord.gg/TfyM755m
 
 \end{slide}
 
