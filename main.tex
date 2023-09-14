@@ -133,7 +133,7 @@
         \setbeamercolor{background canvas}{bg=darkblue}
         \setbeamercolor{normal text}{fg=white}
         \usebeamercolor[fg]{normal text}
-        \begin{frame}
+        \begin{frame}[containsverbatim]
     }
     {\end{frame}}
 
@@ -157,18 +157,18 @@
 
 \begin{document}
 
+% Purpose: PRQL is a language worth migrating to
+% Points:
+% - SQL could be improved
+% - PRQL has a solid base and great ergonomics
+% - the act of compiling to SQL is sound
+
 \begin{frame}
 \titlepage
-
-% I'm aljaz mur erzen, I work at EdgeDB as a compiler engineer and today I'll talk about prequel.
-% Prequel is a new language that was born out of frustrations with SQL and dataframe libraries.
-
 \end{frame}
 
 \begin{slide}{}
-
-% Before I get started, I'll briefly show you how does it look like, so you have a mental image of what we are dealing with.
-
+% This is prequel:
 \begin{minted}{PRQL}
 from animals
 filter height_cm > 20
@@ -183,12 +183,13 @@ select {
 }
 \end{minted}
 
-% This query is meant to execute in a database that contains tables `albums` and `artists`.
+% This query is meant to be executed in a database of some zoo, probably,
+% since it requires tables `animals` and `keepers`.
+
 % <!-- explanation of what the query does -->
 
-% Cool. It looks similar to SQL and (also Python is some cases).
+% It looks similar to SQL and (also Python is some cases).
 % I do think that just by looking at this example you should be able to write simple queries yourself.
-
 \end{slide}
 
 
@@ -197,21 +198,19 @@ select {
 % But any time that I'm presented with a new language, my first question is "Why?".
 % Why dear god do we need more strange syntax, more new rules and more slightly different function names than what I'm already used to?   
 
-Why?
+\textbf{Is it any good?}
 
 % And this is a very relevant question, because any new tool (and even more so a language) has a significant transition cost associated with it.
 
-There are transition costs!
+But there are transition costs!
 
 % So that is the main question I'll be answering today, and this is going to take some time.
 % From time to time it might seem like I'm bashing SQL for the fun of it, and this is partially true.
 % It also partially because PRQL was designed out of contempt toward data tools we were dealing with.
-
 \end{slide}
-    
-
 
 \begin{frame}
+% I'm aljaz mur erzen, I work at EdgeDB as a compiler engineer and today I'll talk about prequel.
 \frametitle{Overview}
 \tableofcontents
 
@@ -625,7 +624,7 @@ from animals
         [
           {
             animal_id = 1,
-            species = "mus musculus",
+            species = "Mus musculus",
             height_cm = 5,
             age = 1,
             keeper_id = 2
@@ -655,7 +654,7 @@ filter height_cm > 10
         [
           {
             animal_id = 1,
-            species = "suricata suricatta",
+            species = "Suricata suricatta",
             height_cm = 15,
             age = 3,
             keeper_id = 4
@@ -759,11 +758,11 @@ select {
 \begin{minted}{PRQL}
 [
   {
-    "I'm suricata suricatta, 3 years old",
+    "I'm Suricata suricatta, 3 years old",
     keeper = "John Doe"
   },
   {
-    "I'm capra ibex, 12 years old",
+    "I'm Capra ibex, 12 years old",
     keeper = "John Doe"
   },
 ]
@@ -1454,232 +1453,232 @@ PRQL $\rightarrow$ PL $\rightarrow$ RQ $\rightarrow$ SQL
 \end{slide}
 
 
-\begin{slide}{Architecture: PRQL}
-
-% Now, I'll go trough how the compiler works.
-% You don't need to follow all of the code, as there is way too much on the slides.
-% I just want you to appreciate how much the compiler is thinking so you don't have to.
-
-\begin{minted}{PRQL}
-from inv = invoices
-join itm = invoice_items (==invoice_id)
-select {inv.invoice_date, itm.unit_price * 1.21 }
-take 10
-\end{minted}
-
-\end{slide}
-
-\begin{slide}{Architecture: PL}
-\begin{minted}{YAML}
-- FuncCall:
-    func:
-      Ident: [from]
-    args:
-      - Ident: [invoices]
-        alias: inv
-\end{minted}
-
-\framebreak
-
-\begin{minted}{YAML}
-Pipeline:
-  exprs:
-    - FuncCall: ...
-    - FuncCall: ...
-    - FuncCall: ...
-    - FuncCall: ...
-\end{minted}
-
-\framebreak
-
-\begin{minted}{YAML}
-FuncCall:
-  func: ...
-  args:
-    - ...
-    - FuncCall:
-        func: ...
-        args:
-        - ...
-        - FuncCall:
-            func: ...
-            args: ...
-\end{minted}
-
-\framebreak
-
-\begin{minted}{PRQL}
-type invoices = {
-    invoice_id = any,
-    invoice_date = any,
-    ..
-}
-type invoice_items = {
-    invoice_id = any,
-    unit_price = int | float,
-    ..
-}
-\end{minted}
-\end{slide}
-
-
-\begin{slide}{Architecture: RQ}
-
-\begin{minted}{YAML}
-def:
-  version: 0.9.4
-tables:
-  - ...
-  - ...
-relation:
-  kind: ...
-  columns: ...
-\end{minted}
-
-\framebreak
-
-\begin{minted}{YAML}
-tables:
-  - id: 0
-    relation:
-      kind:
-        ExternRef: [invoice_items]
-      columns: [invoice_id, unit_price, Wildcard]
-  - id: 1
-    relation:
-      kind:
-        ExternRef: [invoices]
-      columns: [invoice_id, invoice_date, Wildcard]
-\end{minted}
-
-\framebreak
-
-\begin{minted}{YAML}
-relation:
-  kind:
-    Pipeline:
-      - From: ...
-      - Join: ...
-      - Compute: ...
-      - Select: ...
-      - Take: ...
-      - Select: ...
-\end{minted}
-
-\framebreak
-
-\begin{minted}{YAML}
-relation:
-  kind:
-    Pipeline:
-      - From:
-          source: 1
-          columns:
-            - (invoice_id, 0)
-            - (invoice_date, 1)
-            - (Wildcard, 2)
-          name: inv
-...
-\end{minted}
-
-\framebreak
-
-\begin{minted}{YAML}
-...
-      - Join:
-          side: Inner
-          with:
-            source: 0
-            columns:
-              - (invoice_id, 3)
-              - (unit_price, 4)
-              - (Wildcard, 5)
-            name: itm
-...
-\end{minted}
-
-\framebreak
-
-\begin{minted}{YAML}
-...
-          filter:
-            kind:
-              Operator:
-                name: std.eq
-                args:
-                  - kind: ColumnRef: 0
-                  - kind: ColumnRef: 3
-...
-\end{minted}
-
-\framebreak
-
-\begin{minted}{YAML}
-...
-      - Compute:
-          id: 6
-          expr:
-            kind:
-              Operator:
-                name: std.mul
-                args:
-                  - kind: ColumnRef: 4
-                  - kind: Literal: Float: 1.21
-...
-\end{minted}
-
-\framebreak
-
-\begin{minted}{YAML}
-...
-      - Select:
-          - 1
-          - 6
-...
-\end{minted}
-
-\framebreak
-
-\begin{minted}{YAML}
-...
-      - Take:
-          range:
-            start: null
-            end: kind: Literal: Integer: 10
-\end{minted}
-
-\framebreak
-
-\begin{minted}{YAML}
-relation:
-  kind:
-    Pipeline:
-      - From: ...
-      - Join: ...
-      - Compute: ...
-      - Select: ...
-      - Take: ...
-      - Select: ...
-\end{minted}
-
-\end{slide}
-
-
-\begin{slide}{Architecture: SQL}
-
-\begin{minted}{SQL}
-SELECT
-  inv.invoice_date,
-  itm.unit_price * 1.21
-FROM
-  invoices AS inv
-  JOIN invoice_items AS itm
-    ON inv.invoice_id = itm.invoice_id
-LIMIT
-  10
-\end{minted}
-
-\end{slide}
+% \begin{slide}{Architecture: PRQL}
+% 
+% % Now, I'll go trough how the compiler works.
+% % You don't need to follow all of the code, as there is way too much on the slides.
+% % I just want you to appreciate how much the compiler is thinking so you don't have to.
+% 
+% \begin{minted}{PRQL}
+% from inv = invoices
+% join itm = invoice_items (==invoice_id)
+% select {inv.invoice_date, itm.unit_price * 1.21 }
+% take 10
+% \end{minted}
+% 
+% \end{slide}
+% 
+% \begin{slide}{Architecture: PL}
+% \begin{minted}{YAML}
+% - FuncCall:
+%     func:
+%       Ident: [from]
+%     args:
+%       - Ident: [invoices]
+%         alias: inv
+% \end{minted}
+% 
+% \framebreak
+% 
+% \begin{minted}{YAML}
+% Pipeline:
+%   exprs:
+%     - FuncCall: ...
+%     - FuncCall: ...
+%     - FuncCall: ...
+%     - FuncCall: ...
+% \end{minted}
+% 
+% \framebreak
+% 
+% \begin{minted}{YAML}
+% FuncCall:
+%   func: ...
+%   args:
+%     - ...
+%     - FuncCall:
+%         func: ...
+%         args:
+%         - ...
+%         - FuncCall:
+%             func: ...
+%             args: ...
+% \end{minted}
+% 
+% \framebreak
+% 
+% \begin{minted}{PRQL}
+% type invoices = {
+%     invoice_id = any,
+%     invoice_date = any,
+%     ..
+% }
+% type invoice_items = {
+%     invoice_id = any,
+%     unit_price = int | float,
+%     ..
+% }
+% \end{minted}
+% \end{slide}
+% 
+% 
+% \begin{slide}{Architecture: RQ}
+% 
+% \begin{minted}{YAML}
+% def:
+%   version: 0.9.4
+% tables:
+%   - ...
+%   - ...
+% relation:
+%   kind: ...
+%   columns: ...
+% \end{minted}
+% 
+% \framebreak
+% 
+% \begin{minted}{YAML}
+% tables:
+%   - id: 0
+%     relation:
+%       kind:
+%         ExternRef: [invoice_items]
+%       columns: [invoice_id, unit_price, Wildcard]
+%   - id: 1
+%     relation:
+%       kind:
+%         ExternRef: [invoices]
+%       columns: [invoice_id, invoice_date, Wildcard]
+% \end{minted}
+% 
+% \framebreak
+% 
+% \begin{minted}{YAML}
+% relation:
+%   kind:
+%     Pipeline:
+%       - From: ...
+%       - Join: ...
+%       - Compute: ...
+%       - Select: ...
+%       - Take: ...
+%       - Select: ...
+% \end{minted}
+% 
+% \framebreak
+% 
+% \begin{minted}{YAML}
+% relation:
+%   kind:
+%     Pipeline:
+%       - From:
+%           source: 1
+%           columns:
+%             - (invoice_id, 0)
+%             - (invoice_date, 1)
+%             - (Wildcard, 2)
+%           name: inv
+% ...
+% \end{minted}
+% 
+% \framebreak
+% 
+% \begin{minted}{YAML}
+% ...
+%       - Join:
+%           side: Inner
+%           with:
+%             source: 0
+%             columns:
+%               - (invoice_id, 3)
+%               - (unit_price, 4)
+%               - (Wildcard, 5)
+%             name: itm
+% ...
+% \end{minted}
+% 
+% \framebreak
+% 
+% \begin{minted}{YAML}
+% ...
+%           filter:
+%             kind:
+%               Operator:
+%                 name: std.eq
+%                 args:
+%                   - kind: ColumnRef: 0
+%                   - kind: ColumnRef: 3
+% ...
+% \end{minted}
+% 
+% \framebreak
+% 
+% \begin{minted}{YAML}
+% ...
+%       - Compute:
+%           id: 6
+%           expr:
+%             kind:
+%               Operator:
+%                 name: std.mul
+%                 args:
+%                   - kind: ColumnRef: 4
+%                   - kind: Literal: Float: 1.21
+% ...
+% \end{minted}
+% 
+% \framebreak
+% 
+% \begin{minted}{YAML}
+% ...
+%       - Select:
+%           - 1
+%           - 6
+% ...
+% \end{minted}
+% 
+% \framebreak
+% 
+% \begin{minted}{YAML}
+% ...
+%       - Take:
+%           range:
+%             start: null
+%             end: kind: Literal: Integer: 10
+% \end{minted}
+% 
+% \framebreak
+% 
+% \begin{minted}{YAML}
+% relation:
+%   kind:
+%     Pipeline:
+%       - From: ...
+%       - Join: ...
+%       - Compute: ...
+%       - Select: ...
+%       - Take: ...
+%       - Select: ...
+% \end{minted}
+% 
+% \end{slide}
+% 
+% 
+% \begin{slide}{Architecture: SQL}
+% 
+% \begin{minted}{SQL}
+% SELECT
+%   inv.invoice_date,
+%   itm.unit_price * 1.21
+% FROM
+%   invoices AS inv
+%   JOIN invoice_items AS itm
+%     ON inv.invoice_id = itm.invoice_id
+% LIMIT
+%   10
+% \end{minted}
+% 
+% \end{slide}
 
 \begin{slide}{Licence}
 
@@ -1714,7 +1713,7 @@ Will never monetize
 \includegraphics[width=0.7\textwidth]{images/pq.png}
 \end{slide}
 
-\begin{slide}{Check it out}
+\begin{slidefull}{Check it out}
 
 % Come check the project out, we are looking for contributors.
 
@@ -1740,6 +1739,13 @@ https://github.com/PRQL/prql
 
 https://discord.gg/TfyM755m
 
-\end{slide}
+\end{slidefull}
+
+{
+\setbeamertemplate{navigation symbols}{}
+\begin{frame}[plain]
+    \makebox[\linewidth]{\includegraphics[width=\paperwidth]{closing_slide.pdf}}
+\end{frame}
+}
 
 \end{document}
