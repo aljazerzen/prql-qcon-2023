@@ -99,8 +99,11 @@
 \usepackage{graphicx} % Allows including images
 \usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
 \usepackage{hyperref}
-\usepackage{minted}
-\renewcommand{\MintedPygmentize}{./pygmentize.py}
+
+\usepackage{minted} % Code highlighting
+\renewcommand{\MintedPygmentize}{./pygmentize.py} % a wrapper that provides PRQL lexer
+
+\setminted[]{highlightcolor=lightblue, autogobble}
 
 \usepackage{amssymb}
 \usepackage{pifont} % for checkmarks
@@ -167,15 +170,16 @@
 % Before I get started, I'll briefly show you how does it look like, so you have a mental image of what we are dealing with.
 
 \begin{minted}{PRQL}
-from albums
-filter album_id > 100
-sort albums.title
+from animals
+filter height_cm > 20
 take 10
-join artists (==artist_id)
+join keepers (==keeper_id)
+filter keepers.first_name == "John"
+sort animals.age
 select {
-    albums.album_id,
-    albums.title,
-    f"Artist name: {artist.name}",
+    species = animals.species,
+    keeper = keepers.name,
+    f"I'm {species}, {animals.age} years old",
 }
 \end{minted}
 
@@ -219,7 +223,7 @@ There are transition costs!
 \section{Flaws of SQL}
 
 \begin{slidefull}
-\Large A deef dive into
+\Large A deep dive into
 
 \LARGE \textbf{Flaws of SQL}
 \end{slidefull}
@@ -257,7 +261,7 @@ FROM tracks GROUP BY album_id
 
 \framebreak
 
-\begin{minted}{SQL}
+\begin{minted}[highlightlines=3-4]{SQL}
 SELECT i.album_id, i.track_count, a.artist_id
 FROM (
   SELECT album_id, COUNT(*) AS track_count
@@ -268,7 +272,7 @@ JOIN albums a USING (album_id)
 \end{slide}
 
 
-\begin{slide}{Patched syntax}
+\begin{slide}{Convoluted syntax}
 
 \begin{minted}{SQL}
 SELECT
@@ -398,133 +402,133 @@ WHERE emp_id = (
 
 \end{slide}
 
-\begin{slide}{Relations cannot be ordered}
-
-\begin{minted}{SQL}
-SELECT * FROM albums ORDER BY title
-\end{minted}
-
-\framebreak
-
-\begin{minted}{SQL}
-SELECT
-  *,
-  ... AS my_col
-FROM (
-    SELECT * FROM albums ORDER BY title
-) inner
-\end{minted}
-
-\framebreak
-
-\begin{minted}{SQL}
-SELECT
-  *,
-  ROW_NUMBER()
-    OVER (ORDER BY artist_id) AS my_col
-FROM (
-    SELECT * FROM albums ORDER BY title
-) inner
-\end{minted}
-
-\framebreak
-
-SELECT returns an \textbf{ordered set}
-
-FROM pulls-in a \textbf{set}
-\framebreak
-
-\begin{minted}{SQL}
-SELECT
-  *,
-  ... AS my_col
-FROM (
-    SELECT *
-    FROM albums
-) inner
-ORDER BY title
-\end{minted}
-
-\begin{minted}{SQL}
-SELECT
-  *,
-  ... AS my_col
-FROM (
-    SELECT * FROM albums ORDER BY title LIMIT 10
-) inner
-ORDER BY title
-\end{minted}
-
-\end{slide}
-
-\begin{slide}{Identity of aggregation}
-
-\begin{minted}{SQL}
-SELECT SUM(cost) FROM expenses WHERE FALSE
-\end{minted}
-
-Two possible behaviors: NULL or 0
-
-Both valid
-
-\framebreak
-
-\begin{block}{}
-    \textbf{``Every marble in this bag is black''}
-
-    ... but the bag is empty.
-\end{block}
-
-Ancient greeks say FALSE
-
-Modern logic says TRUE
-
-SQL says NULL
-
-% \framebreak
-
-% This breaks stuff
-
+% \begin{slide}{Relations cannot be ordered}
+% 
 % \begin{minted}{SQL}
-% SELECT array_agg(value)
-% FROM jsonb_array_elements(my_jsonb_array)
+% SELECT * FROM albums ORDER BY title
 % \end{minted}
+% 
+% \framebreak
+% 
+% \begin{minted}{SQL}
+% SELECT
+%   *,
+%   ... AS my_col
+% FROM (
+%     SELECT * FROM albums ORDER BY title
+% ) inner
+% \end{minted}
+% 
+% \framebreak
+% 
+% \begin{minted}{SQL}
+% SELECT
+%   *,
+%   ROW_NUMBER()
+%     OVER (ORDER BY artist_id) AS my_col
+% FROM (
+%     SELECT * FROM albums ORDER BY title
+% ) inner
+% \end{minted}
+% 
+% \framebreak
+% 
+% SELECT returns an \textbf{ordered set}
+% 
+% FROM pulls-in a \textbf{set}
+% \framebreak
+% 
+% \begin{minted}{SQL}
+% SELECT
+%   *,
+%   ... AS my_col
+% FROM (
+%     SELECT *
+%     FROM albums
+% ) inner
+% ORDER BY title
+% \end{minted}
+% 
+% \begin{minted}{SQL}
+% SELECT
+%   *,
+%   ... AS my_col
+% FROM (
+%     SELECT * FROM albums ORDER BY title LIMIT 10
+% ) inner
+% ORDER BY title
+% \end{minted}
+% 
+% \end{slide}
 
-\framebreak
-
-\textbf{Homomorphism of addition}
-
-\begin{verbatim}
-SUM([1]) + SUM([4, 5]) = SUM([1, 4, 5])
-
-                 1 + 9 = 10 
-\end{verbatim}
-
-\framebreak
-
-\begin{verbatim}
-SUM([1]) + SUM([]) = SUM([1])
-
-       1 +    ?    = 1
-
-        -> SUM([]) = 0
-\end{verbatim}
-
-\textbf{identity of addition}
-
-\framebreak
-
-\large
-\begin{verbatim}
-COUNT([])      = 0
-ARRAY_AGG([])  = []
-SUM([])        = 0
-ANY([])        = false
-EVERY([])      = true
-STRING_AGG([]) = ''
-\end{verbatim}
-
-\end{slide}
+% \begin{slide}{Identity of aggregation}
+% 
+% \begin{minted}{SQL}
+% SELECT SUM(cost) FROM expenses WHERE FALSE
+% \end{minted}
+% 
+% Two possible behaviors: NULL or 0
+% 
+% Both valid
+% 
+% \framebreak
+% 
+% \begin{block}{}
+%     \textbf{``Every marble in this bag is black''}
+% 
+%     ... but the bag is empty.
+% \end{block}
+% 
+% Ancient greeks say FALSE
+% 
+% Modern logic says TRUE
+% 
+% SQL says NULL
+% 
+% % \framebreak
+% 
+% % This breaks stuff
+% 
+% % \begin{minted}{SQL}
+% % SELECT array_agg(value)
+% % FROM jsonb_array_elements(my_jsonb_array)
+% % \end{minted}
+% 
+% \framebreak
+% 
+% \textbf{Homomorphism of addition}
+% 
+% \begin{verbatim}
+% SUM([1]) + SUM([4, 5]) = SUM([1, 4, 5])
+% 
+%                  1 + 9 = 10 
+% \end{verbatim}
+% 
+% \framebreak
+% 
+% \begin{verbatim}
+% SUM([1]) + SUM([]) = SUM([1])
+% 
+%        1 +    ?    = 1
+% 
+%         -> SUM([]) = 0
+% \end{verbatim}
+% 
+% \textbf{identity of addition}
+% 
+% \framebreak
+% 
+% \large
+% \begin{verbatim}
+% COUNT([])      = 0
+% ARRAY_AGG([])  = []
+% SUM([])        = 0
+% ANY([])        = false
+% EVERY([])      = true
+% STRING_AGG([]) = ''
+% \end{verbatim}
+% 
+% \end{slide}
 
 
 \begin{slide}{Dialects}
@@ -606,21 +610,266 @@ Compilers could:
 \end{slidefull}
 
 
+\begin{slide}{}
+
+\large
+\begin{minted}{PRQL}
+from animals
+\end{minted}
+\framebreak
+
+\normalsize
+\begin{columns}
+    \begin{column}{0.7\textwidth}
+        \begin{minted}{PRQL}
+        [
+          {
+            animal_id = 1,
+            species = "mus musculus",
+            height_cm = 5,
+            age = 1,
+            keeper_id = 2
+          },
+          ... and 100 others ...
+        ]
+        \end{minted}
+    \end{column}
+    \begin{column}{0.3\textwidth}
+        \hfill
+        \includegraphics[height=12em]{images/mus_musculus.jpg}
+    \end{column}
+\end{columns}
+\framebreak
+
+\large
+\begin{minted}[highlightlines=2]{PRQL}
+from animals
+filter height_cm > 10
+\end{minted}
+\framebreak
+
+\normalsize
+\begin{columns}
+    \begin{column}{0.7\textwidth}
+        \begin{minted}[highlightlines=9]{PRQL}
+        [
+          {
+            animal_id = 1,
+            species = "suricata suricatta",
+            height_cm = 15,
+            age = 3,
+            keeper_id = 4
+          },
+          ... and 14 others ...
+        ]
+        \end{minted}
+    \end{column}
+    \begin{column}{0.3\textwidth}
+        \hfill
+        \includegraphics[height=12em]{images/suricata_suricatta.jpg}
+    \end{column}
+\end{columns}
+\framebreak
+
+\large
+\begin{minted}[highlightlines=3]{PRQL}
+from animals
+filter height_cm > 10
+take 10
+\end{minted}
+\framebreak
+
+\begin{minted}[highlightlines=4-6]{PRQL}
+from animals
+filter height_cm > 10
+take 10
+join keepers (
+    animals.keeper_id == keepers.keeper_id
+)
+\end{minted}
+\framebreak
+
+\begin{minted}[highlightlines=4-6]{PRQL}
+from animals
+filter height_cm > 10
+take 10
+join k = keepers (
+    animals.keeper_id == k.keeper_id
+)
+\end{minted}
+\framebreak
+
+\begin{minted}[highlightlines=4]{PRQL}
+from animals
+filter height_cm > 10
+take 10
+join k = keepers (==keeper_id)
+\end{minted}
+\framebreak
+
+\begin{minted}[highlightlines=5]{PRQL}
+from animals
+filter height_cm > 10
+take 10
+join k = keepers (==keeper_id)
+filter k.first_name == "John"
+\end{minted}
+\framebreak
+
+\begin{minted}[highlightlines=6]{PRQL}
+from animals
+filter height_cm > 10
+take 10
+join k = keepers (==keeper_id)
+filter k.first_name == "John"
+sort animals.age
+\end{minted}
+\framebreak
+
+\begin{minted}[highlightlines=6-10]{PRQL}
+...
+take 10
+join k = keepers (==keeper_id)
+filter k.first_name == "John"
+sort animals.age
+select {
+    animals.age,
+    species = animals.species,
+    keeper = f"{k.first_name} {k.last_name}",
+}
+\end{minted}
+\framebreak
+
+\normalsize
+
+\begin{minted}[highlightlines=7-10]{PRQL}
+...
+select {
+    animals.age,
+    species = animals.species,
+    keeper = f"{k.first_name} {k.last_name}",
+}
+select {
+    f"I'm {species}, {animals.age} years old",
+    keeper
+}
+\end{minted}
+\framebreak
+
+\begin{minted}{PRQL}
+[
+  {
+    "I'm suricata suricatta, 3 years old",
+    keeper = "John Doe"
+  },
+  {
+    "I'm capra ibex, 12 years old",
+    keeper = "John Doe"
+  },
+]
+\end{minted}
+\framebreak
+
+\normalsize
+\includegraphics[height=12em]{images/suricata_suricatta.jpg}
+\hfill
+\includegraphics[height=12em]{images/capra_ibex.jpg}
+
+\framebreak
+
+\begin{columns}
+    \begin{column}{0.35\textwidth}
+        \setlength{\parskip}{\baselineskip}
+
+        - Top to bottom
+
+        - Easy exploration
+
+        - Lazy evaluation
+
+        - Extract a variable
+
+        - Extract a function
+    \end{column}
+    \begin{column}{0.65\textwidth}
+        \small
+        \begin{minted}[]{PRQL}
+        from animals
+        filter height_cm > 10
+        take 10
+        join k = keepers (==keeper_id)
+        filter k.first_name == "John"
+        sort animals.age
+        select {
+            animals.age,
+            species = animals.species,
+            keeper = f"{k.first_name} {k.last_name}",
+        }
+        select {
+            f"I'm {species}, {animals.age} years old",
+            keeper
+        }
+        \end{minted}
+    \end{column}
+\end{columns}
+\end{slide}
+
+\begin{slide}{Extract a variable}
+\begin{minted}[highlightlines=1-2]{PRQL}
+from animals
+filter height_cm > 20
+take 10
+\end{minted}
+\framebreak
+\begin{minted}[highlightlines=2-3]{PRQL}
+let big_animals = (
+    from animals
+    filter height_cm > 20
+)
+
+from big_animals
+take 10
+\end{minted}
+\end{slide}
+
+
+\begin{slide}{Extract a function}
+\begin{minted}[highlightlines=2-3]{PRQL}
+from animals
+sort {-height_cm}
+take 5
+\end{minted}
+\framebreak
+\begin{minted}[highlightlines=3-4]{PRQL}
+let take_biggest = n rel -> (
+    rel
+    sort {-height_cm}
+    take n
+)
+
+from animals
+take_biggest 5
+\end{minted}
+\end{slide}
+
+
 \begin{slide}{Tuple relational calculus}
 
 % In short, this is relational algebra:
+
+\large
 
 Relation $\sim$ a set of tuples
 
 \vspace{1em}
 
-\Large
+\LARGE
 
-$\pi_{track\_id, name, title}(R)$
+$\pi_{\textrm{track\_id}, \textrm{name}, \textrm{title}}(R)$
+\hfill
+$\sigma_{\textrm{track\_id} = 5}(R)$
 
-$\sigma_{track\_id = 5}(R)$
-
-$R * S$
+\centering $R * S$
 
 % I'll go over fundamentals of PRQL syntax and semantics.
 % I want to show that if you go and design a language that is able to express relational algebra,
@@ -750,9 +999,9 @@ Transform $:=$ a function on relations
 \large
 
 \begin{minted}{PRQL}
-let invoices = ...
+let animals = ...
 
-let main = (filter (total > 10) invoices)
+let main = (filter (height_cm > 20) animals)
 \end{minted}
 
 % Now let's simplify this notation a bit.
@@ -760,20 +1009,20 @@ let main = (filter (total > 10) invoices)
 
 \framebreak
 \begin{minted}{PRQL}
-let invoices = ...
+let animals = ...
 
-let main = (invoices | filter (total > 10))
+let main = (animals | filter (height_cm > 20))
 \end{minted}
 
 % Actually, the longer one 
 
 \framebreak
 \begin{minted}{PRQL}
-let invoices = ...
+let animals = ...
 
 let main = (
-    invoices
-    filter (total > 10)
+    animals
+    filter (height_cm > 10)
 )
 \end{minted}
 
@@ -783,108 +1032,42 @@ let main = (
 
 \framebreak
 \begin{minted}{PRQL}
-let invoices = ...
+let animals = ...
 
-invoices
-filter (total > 10)
+animals
+filter (height_cm > 10)
 \end{minted}
 
-% Because our `invoices` relation is actually stored in database table,
+% Because our `animals` relation is actually stored in database table,
 % we can use `from` function, which will pull the relation from the database.
 
 \framebreak
 \begin{minted}{PRQL}
-from invoices
-filter (total > 10)
+from animals
+filter (height_cm > 10)
 \end{minted}
 
 % As the last touch, the parenthesis are not really needed.
 
 \framebreak
 \begin{minted}{PRQL}
-from invoices
-filter total > 10
+from animals
+filter height_cm > 10
 \end{minted}
 
 % And this is an idiomatic PRQL query.
 % Built on a few basic syntactic and semantic rules.
 % With formal specification that would probably fit on a few pages.
 
-\end{slide}
-
-\begin{slide}{Top to bottom}
-
-\begin{minted}{PRQL}
-from albums
-filter album_id > 100
-sort albums.title
-\end{minted}
-
 \framebreak
 
 \begin{minted}{PRQL}
-from albums
-filter album_id > 100
-sort albums.title
-take 10
-\end{minted}
-
-\framebreak
-
-\begin{minted}{PRQL}
-from albums
-filter album_id > 100
-sort albums.title
-take 10
-join artists (==artist_id)
-\end{minted}
-
-\framebreak
-
-\begin{minted}{PRQL}
-from albums
-filter album_id > 100
-sort albums.title
-take 10
-join artists (albums.artist_id == artists.artist_id)
-\end{minted}
-
-\framebreak
-
-\begin{minted}{PRQL}
-from albums
-filter album_id > 100
-sort albums.title
-take 10
-join artists (==artist_id)
-select {
-    albums.album_id,
-    albums.title,
-    f"Artist name: {artist.name}",
-}
-\end{minted}
-
-\framebreak
-
-- Convenient for exploration
-
-- Lazy evaluation
-
-- Extract a variable
-
-- Extract a function
-
-\framebreak
-
-\begin{minted}{PRQL}
-let take_cheapest = n rel -> (
-    rel
-    sort unit_price
-    take n
-)
-
-from tracks
-take_cheapest 5
+std.from             std.take
+std.select           std.join
+std.derive           std.group
+std.filter           std.window
+std.aggregate        std.append
+std.sort             std.loop
 \end{minted}
 
 \end{slide}
@@ -986,8 +1169,8 @@ group dept (
 )
 
 [
-  {dept = "Sales",      id = 33, cost = 5.30},
-  {dept = "Accounting", id = 16, cost = 1.22},
+  {dept = "Sales",      id =  3, cost = 33.30},
+  {dept = "Accounting", id = 16, cost = 12.22},
 ]
 \end{minted}
 
@@ -1046,7 +1229,15 @@ my_col IS NULL
 
 \end{slide}
 
-\begin{slide}{Micro-features}
+\begin{slide}{Ergonomics}
+
+% Also known as Quality of Life features.
+
+% date literals
+% f-strings
+% coalesce operator
+% underscores in numeric literals
+% trailing commas, which allow commenting out lines
 
 \begin{minted}{PRQL}
 from employees
@@ -1054,8 +1245,8 @@ derive {
   age = @2023-01-31 - birth_date,
   full_name = f"{first_name} {last_name}",
   manager = reports_to ?? "No one",
-#  is_fired = "No",
   salary = 1_000_000,
+#  is_fired = "No",
 }
 \end{minted}
 
@@ -1073,10 +1264,10 @@ derive {
 %%% 
 %%% If you reuse some existing language (like SQL):
 %%% - you have to implement it with all of its quirks that people are already used to,
-%%% - you will certainly diviate from the language at some point,
+%%% - you will certainly deviate from the language at some point,
 %%% 
 %%% If you create a new language:
-%%% - you have to design a language alogside an already complex system,
+%%% - you have to design a language alongside an already complex system,
 %%% - it will lack a few features,
 %%% - people will have to learn it,
 
@@ -1110,7 +1301,7 @@ How is this language executed?
 \end{slide}
 
 
-\begin{slide}{The task of a query lanuage}
+\begin{slide}{The task of a database interface}
 
 Imagine a database without a query language.
 
@@ -1255,9 +1446,238 @@ Fail early
 
 \begin{slide}{Architecture}
 
+\large
+\textbf{
 PRQL $\rightarrow$ PL $\rightarrow$ RQ $\rightarrow$ SQL
+}
 
-% TODO: example of PL and RQ  
+\end{slide}
+
+
+\begin{slide}{Architecture: PRQL}
+
+% Now, I'll go trough how the compiler works.
+% You don't need to follow all of the code, as there is way too much on the slides.
+% I just want you to appreciate how much the compiler is thinking so you don't have to.
+
+\begin{minted}{PRQL}
+from inv = invoices
+join itm = invoice_items (==invoice_id)
+select {inv.invoice_date, itm.unit_price * 1.21 }
+take 10
+\end{minted}
+
+\end{slide}
+
+\begin{slide}{Architecture: PL}
+\begin{minted}{YAML}
+- FuncCall:
+    func:
+      Ident: [from]
+    args:
+      - Ident: [invoices]
+        alias: inv
+\end{minted}
+
+\framebreak
+
+\begin{minted}{YAML}
+Pipeline:
+  exprs:
+    - FuncCall: ...
+    - FuncCall: ...
+    - FuncCall: ...
+    - FuncCall: ...
+\end{minted}
+
+\framebreak
+
+\begin{minted}{YAML}
+FuncCall:
+  func: ...
+  args:
+    - ...
+    - FuncCall:
+        func: ...
+        args:
+        - ...
+        - FuncCall:
+            func: ...
+            args: ...
+\end{minted}
+
+\framebreak
+
+\begin{minted}{PRQL}
+type invoices = {
+    invoice_id = any,
+    invoice_date = any,
+    ..
+}
+type invoice_items = {
+    invoice_id = any,
+    unit_price = int | float,
+    ..
+}
+\end{minted}
+\end{slide}
+
+
+\begin{slide}{Architecture: RQ}
+
+\begin{minted}{YAML}
+def:
+  version: 0.9.4
+tables:
+  - ...
+  - ...
+relation:
+  kind: ...
+  columns: ...
+\end{minted}
+
+\framebreak
+
+\begin{minted}{YAML}
+tables:
+  - id: 0
+    relation:
+      kind:
+        ExternRef: [invoice_items]
+      columns: [invoice_id, unit_price, Wildcard]
+  - id: 1
+    relation:
+      kind:
+        ExternRef: [invoices]
+      columns: [invoice_id, invoice_date, Wildcard]
+\end{minted}
+
+\framebreak
+
+\begin{minted}{YAML}
+relation:
+  kind:
+    Pipeline:
+      - From: ...
+      - Join: ...
+      - Compute: ...
+      - Select: ...
+      - Take: ...
+      - Select: ...
+\end{minted}
+
+\framebreak
+
+\begin{minted}{YAML}
+relation:
+  kind:
+    Pipeline:
+      - From:
+          source: 1
+          columns:
+            - (invoice_id, 0)
+            - (invoice_date, 1)
+            - (Wildcard, 2)
+          name: inv
+...
+\end{minted}
+
+\framebreak
+
+\begin{minted}{YAML}
+...
+      - Join:
+          side: Inner
+          with:
+            source: 0
+            columns:
+              - (invoice_id, 3)
+              - (unit_price, 4)
+              - (Wildcard, 5)
+            name: itm
+...
+\end{minted}
+
+\framebreak
+
+\begin{minted}{YAML}
+...
+          filter:
+            kind:
+              Operator:
+                name: std.eq
+                args:
+                  - kind: ColumnRef: 0
+                  - kind: ColumnRef: 3
+...
+\end{minted}
+
+\framebreak
+
+\begin{minted}{YAML}
+...
+      - Compute:
+          id: 6
+          expr:
+            kind:
+              Operator:
+                name: std.mul
+                args:
+                  - kind: ColumnRef: 4
+                  - kind: Literal: Float: 1.21
+...
+\end{minted}
+
+\framebreak
+
+\begin{minted}{YAML}
+...
+      - Select:
+          - 1
+          - 6
+...
+\end{minted}
+
+\framebreak
+
+\begin{minted}{YAML}
+...
+      - Take:
+          range:
+            start: null
+            end: kind: Literal: Integer: 10
+\end{minted}
+
+\framebreak
+
+\begin{minted}{YAML}
+relation:
+  kind:
+    Pipeline:
+      - From: ...
+      - Join: ...
+      - Compute: ...
+      - Select: ...
+      - Take: ...
+      - Select: ...
+\end{minted}
+
+\end{slide}
+
+
+\begin{slide}{Architecture: SQL}
+
+\begin{minted}{SQL}
+SELECT
+  inv.invoice_date,
+  itm.unit_price * 1.21
+FROM
+  invoices AS inv
+  JOIN invoice_items AS itm
+    ON inv.invoice_id = itm.invoice_id
+LIMIT
+  10
+\end{minted}
 
 \end{slide}
 
@@ -1265,7 +1685,7 @@ PRQL $\rightarrow$ PL $\rightarrow$ RQ $\rightarrow$ SQL
 
 % Language spec, docs, prqlc is open source
 
-Apache
+Apache License 2.0
 
 % all commits are on GH repo
 % design is discussed in GH issues
@@ -1275,10 +1695,10 @@ Open community
 
 % a language like this is hard to monetize
 % even worse: affiliation with VC would have negative impact on adoption
-% especially by opensource projects  
+% especially by open-source projects  
 % thus: a slow but steady development pace
 
-No plans to monetize
+Will never monetize
 
 \end{slide}
 
@@ -1295,6 +1715,8 @@ No plans to monetize
 \end{slide}
 
 \begin{slide}{Check it out}
+
+% Come check the project out, we are looking for contributors.
 
 \begin{columns}
     \begin{column}{0.2\textwidth}

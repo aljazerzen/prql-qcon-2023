@@ -9,8 +9,8 @@ class PRQLLexer(RegexLexer):
 
     tokens = {
         'root': [
-            (r'let|prql|case|func|module', Keyword),
-            (r'from|derive|select|take|aggregate|join|filter|sort|group|window|loop|append', Name.Function),
+            (r'let|prql|case|func|module|type', Keyword),
+            (r'(from|derive|select|take|aggregate|join|filter|sort|group|window|loop|append)(?![a-zA-Z_0-9])', Name.Function),
             (r'[fsr]?"(.|\\")*"', Literal.String),
             (r'[0-9]+(\\.[0-9]+)?', Literal.Number),
             (r'[a-zA-Z_][a-zA-Z_0-9]*:', Name.Decorator),
