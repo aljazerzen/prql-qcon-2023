@@ -193,21 +193,21 @@ select {
 \end{slide}
 
 
-\begin{slide}{}
-\Large
-% But any time that I'm presented with a new language, my first question is "Why?".
-% Why dear god do we need more strange syntax, more new rules and more slightly different function names than what I'm already used to?   
-
-\textbf{Is it any good?}
-
-% And this is a very relevant question, because any new tool (and even more so a language) has a significant transition cost associated with it.
-
-But there are transition costs!
-
-% So that is the main question I'll be answering today, and this is going to take some time.
-% From time to time it might seem like I'm bashing SQL for the fun of it, and this is partially true.
-% It also partially because PRQL was designed out of contempt toward data tools we were dealing with.
-\end{slide}
+% \begin{slide}{}
+% \Large
+% % But any time that I'm presented with a new language, my first question is "Why?".
+% % Why dear god do we need more strange syntax, more new rules and more slightly different function names than what I'm already used to?   
+% 
+% \textbf{Is it any good?}
+% 
+% % And this is a very relevant question, because any new tool (and even more so a language) has a significant transition cost associated with it.
+% 
+% But there are transition costs!
+% 
+% % So that is the main question I'll be answering today, and this is going to take some time.
+% % From time to time it might seem like I'm bashing SQL for the fun of it, and this is partially true.
+% % It also partially because PRQL was designed out of contempt toward data tools we were dealing with.
+% \end{slide}
 
 \begin{frame}
 % I'm aljaz mur erzen, I work at EdgeDB as a compiler engineer and today I'll talk about prequel.
@@ -251,27 +251,14 @@ $\rightarrow$ Not a ``proper'' programming language
 \end{slide}
 
 
-\begin{slide}{Not really composable}
+\begin{slide}{Human-friendly syntax}
 
+\large
 \begin{minted}{SQL}
-SELECT album_id, COUNT(*) AS track_count
-FROM tracks GROUP BY album_id
+SELECT DISTINCT name
+FROM invoices
 \end{minted}
-
 \framebreak
-
-\begin{minted}[highlightlines=3-4]{SQL}
-SELECT i.album_id, i.track_count, a.artist_id
-FROM (
-  SELECT album_id, COUNT(*) AS track_count
-  FROM tracks GROUP BY album_id
-) AS i
-JOIN albums a USING (album_id)
-\end{minted}
-\end{slide}
-
-
-\begin{slide}{Convoluted syntax}
 
 \begin{minted}{SQL}
 SELECT
@@ -279,7 +266,6 @@ SELECT
 FROM
   invoices
 \end{minted}
-
 \framebreak
 
 \begin{minted}{SQL}
@@ -288,20 +274,13 @@ SELECT
 FROM
   invoices
 \end{minted}
-
-\framebreak
-
-\begin{minted}{SQL}
-SELECT DISTINCT name
-FROM invoices
-\end{minted}
-
 \framebreak
 
 % If you look at this SWITCH statement, you will be
 % so taken back by its verbosity and screaming uppercase,
 % that you will not notice that it is actually COBOL 
 
+\normalsize
 \begin{minted}{SQL}
 SELECT EVALUATE TYPE-EMPLOYEE
   WHEN "F" 
@@ -320,17 +299,17 @@ SELECT EVALUATE TYPE-EMPLOYEE
 % And we cannot add them in, because they would break
 % existing parsing rules.
 
-Too much syntax
-
-... but also ...
-
-Not enough syntax
-
+% \large
+% Too much syntax
+% 
+% ... but also ...
+% 
+% Not enough syntax
 \end{slide}
 
 
 \begin{slide}{Name resolution}
-
+\large
 \begin{minted}{SQL}
 SELECT title AS title_alias
 FROM albums
@@ -365,6 +344,26 @@ More rules:
 \end{slide}
 
 
+\begin{slide}{Not really composable}
+
+\begin{minted}{SQL}
+SELECT album_id, COUNT(*) AS track_count
+FROM tracks GROUP BY album_id
+\end{minted}
+
+\framebreak
+
+\begin{minted}[highlightlines=3-4]{SQL}
+SELECT i.album_id, i.track_count, a.artist_id
+FROM (
+  SELECT album_id, COUNT(*) AS track_count
+  FROM tracks GROUP BY album_id
+) AS i
+JOIN albums a USING (album_id)
+\end{minted}
+\end{slide}
+
+
 \begin{slide}{Relations vs scalars}
 
 % SQL has two major categories of expressions:
@@ -385,6 +384,8 @@ SELECT count(*) FROM table
 % They have the same syntactical structure
 % They cannot be used in all the same places
 
+Depends on the database contents:
+
 \begin{minted}{SQL}
 SELECT emp_id FROM emp WHERE role = 'manager'
 \end{minted}
@@ -392,8 +393,7 @@ SELECT emp_id FROM emp WHERE role = 'manager'
 \framebreak
 
 \begin{minted}{SQL}
-SELECT *
-FROM emp
+SELECT * FROM emp
 WHERE emp_id = (
     SELECT emp_id FROM emp WHERE role = 'manager'
 )
@@ -528,77 +528,6 @@ WHERE emp_id = (
 % \end{verbatim}
 % 
 % \end{slide}
-
-
-\begin{slide}{Dialects}
-
-
-    % There is a lot of databases and each of them supports different language features.
-
-    % Most differences are on the syntactic level (TOP vs LIMIT, or DISTINCT ON).
-
-Differences in:
-
-- syntax (TOP vs LIMIT)
-
-    % There are differences in what functions are available.
-    
-- available functions
-
-    % There are differences in what data types are available (datetime in SQLite, arrays in MySQL).
-
-- available data types
-
-\framebreak
-
-% So there is no SQL language, just a class of languages that look similar.
-
-A class of languages
-
-There is a standard
-
-Slight deviations
-    
-\framebreak
-
-% ... and actually, we could expect this. Each database has different:
-% - priorities on what's important,
-% - backward compatibility guarantees (you cannot just change behavior for the sake of standard conformity),
-% - limitations of what it is possible to implement with current architecture.
-
-Different:
-
-- priorities
-
-- backward compatibility guarantees
-
-- implementation limitations
-
-\framebreak
-
-% The problematic part is that the database interface does not exactly specify what it supports.
-% There is documentation, but man, imagine if you have a large query and your boss asks you
-% "can we execute this on some other database engine?".
-% Best you can say is "probably".
-
-% We lack a specification of all supported features of a database engine.
-
-No clear \& robust specification
-
-Compilers could:
-
-- adapt query to target database
-
-- produce error early
-
-% Something that you can run your compiler against, and would:
-% - produce a slightly different query to be executed, but with same behavior,
-% - produce errors like
-%   "this function is not supported by your database, use that function instead".
-
-% I'll talk about how we tackle this problem and out long-term plan.
-
-\end{slide}
 
 
 \section{Language for relations}
@@ -1286,6 +1215,8 @@ How is this language executed?
 % - a database interface
 % - a language for querying 
 
+Replace SQL as:
+
 \xmark \hspace{0.5em} database interface
 
 % well it could, but still not all SQL statements (REINDEX, CREATE, ...)
@@ -1379,6 +1310,72 @@ Analogous to amd64, JVM
 % - a Java program compiles to byte code to be executed in JVM,
 % - -> we compile PRQL to SQL to be executed in a database.
 
+\end{slide}
+
+
+\begin{slide}{Dialects}
+% There is a lot of databases and each of them supports different language features.
+
+% Most differences are on the syntactic level (TOP vs LIMIT, or DISTINCT ON).
+
+Differences in:
+
+- syntax (TOP vs LIMIT)
+
+    % There are differences in what functions are available.
+    
+- available functions
+
+    % There are differences in what data types are available (datetime in SQLite, arrays in MySQL).
+
+- available data types
+
+% \framebreak
+% 
+% % So there is no SQL language, just a class of languages that look similar.
+% 
+% A class of languages
+% 
+% There is a standard
+% 
+% Slight deviations
+    
+\framebreak
+
+% ... and actually, we could expect this. Each database has different:
+% - priorities on what's important,
+% - backward compatibility guarantees (you cannot just change behavior for the sake of standard conformity),
+% - limitations of what it is possible to implement with current architecture.
+
+Different:
+
+- priorities
+
+- backward compatibility guarantees
+
+- implementation limitations
+
+\framebreak
+
+% The problematic part is that the database interface does not exactly specify what it supports.
+% There is documentation, but man, imagine if you have a large query and your boss asks you
+% "can we execute this on some other database engine?".
+% Best you can say is "probably".
+
+% We lack a specification of all supported features of a database engine.
+
+No clear \& robust specification
+
+Compilers could:
+
+- adapt query to target database
+
+- produce error early
+
+% Something that you can run your compiler against, and would:
+% - produce a slightly different query to be executed, but with same behavior,
+% - produce errors like
+%   "this function is not supported by your database, use that function instead".
 \end{slide}
 
 
