@@ -173,12 +173,12 @@
 from animals
 filter height_cm > 20
 take 10
-join keepers (==keeper_id)
-filter keepers.first_name == "John"
+join k = keepers (==keeper_id)
+filter k.first_name == "Thomas"
 sort animals.age
 select {
     species = animals.species,
-    keeper = keepers.name,
+    keeper = k.name,
     f"I'm {species}, {animals.age} years old",
 }
 \end{minted}
@@ -228,35 +228,53 @@ select {
 \end{slidefull}
 
 
-\begin{slide}{Origins of the relational model}
+\begin{slide}{Origins}
 
+\large
 % The relational model was introduced by Edgar F. Codd in a 1970 paper “A Relational Model of Data for Large Shared Data Banks”.
-
 % The proposed novelty was abstraction over data storage, so a user of "data banks" did not have to deal with where and how the data is stored, but work with data in its relational form.
+1970, Edgar F. Code: Relational model
 
-1970, Edgar F. Codd: abstraction over data storage
+$\rightarrow$ Abstraction over data storage
 
 $\rightarrow$ Tuple relational calculus
 
+\framebreak
+% In short, this is relational algebra:
+
+\large
+Relation $\sim$ a set of tuples
+\vspace{1em}
+
+\LARGE
+$\pi_{\textrm{track\_id}, \textrm{name}, \textrm{title}}(R)$
+\hfill
+$\sigma_{\textrm{track\_id} = 5}(R)$
+
+\begin{center}$R * S$\end{center}
+
+\framebreak
+\large
 % Soon after, people figured out that "tuple relational calculus" is not the most readable to regular users as it was expressed with greek letters and Donald D. Chamberlin and Raymond F. Boyce published a paper that introduced SEQUEL: A structured English query language.
     
 % It was presented as having the same expressive power as the first order predicate calculus, on which the tuple relational calculus was based on. It was meant for "users without formal training in mathematics or computer programming" and "predominant use of the language would be for ad-hoc queries".
+1974, Donald D. Chamberlin \& Raymond F. Boyce
 
-1974, Donald D. Chamberlin \& Raymond F. Boyce: SEQUEL
+$\rightarrow$ SEQUEL
 
 $\rightarrow$ Not a ``proper'' programming language
-
 % As in - SQL was not meant to be a "proper" programming language.
 
 \end{slide}
-
 
 \begin{slide}{Human-friendly syntax}
 
 \large
 \begin{minted}{SQL}
-SELECT DISTINCT name
-FROM invoices
+SELECT
+  DISTINCT name
+FROM
+  invoices
 \end{minted}
 \framebreak
 
@@ -280,18 +298,18 @@ FROM
 % so taken back by its verbosity and screaming uppercase,
 % that you will not notice that it is actually COBOL 
 
-\normalsize
-\begin{minted}{SQL}
-SELECT EVALUATE TYPE-EMPLOYEE
-  WHEN "F" 
-    MOVE "FULL TIME" TO EMP-TYPE-PR
-  WHEN "P" 
-    MOVE "PART TIME" TO EMP-TYPE-PR
-  WHEN "C" 
-    MOVE "CONSULTANT" TO EMP-TYPE-PR
-  WHEN OTHER
-    MOVE "INVALID" TO EMP-TYPE-PR
-\end{minted}
+% \normalsize
+% \begin{minted}{SQL}
+% SELECT EVALUATE TYPE-EMPLOYEE
+%   WHEN "F" 
+%     MOVE "FULL TIME" TO EMP-TYPE-PR
+%   WHEN "P" 
+%     MOVE "PART TIME" TO EMP-TYPE-PR
+%   WHEN "C" 
+%     MOVE "CONSULTANT" TO EMP-TYPE-PR
+%   WHEN OTHER
+%     MOVE "INVALID" TO EMP-TYPE-PR
+% \end{minted}
 
 % And that's my point: SQL is old and lacking modern
 % language features such a f-strings and trailing commas.
@@ -326,7 +344,7 @@ FROM albums
 \begin{minted}{SQL}
 SELECT title AS title_alias
 FROM albums
-WHERE title_alias LIKE 'Do I Wanna %'
+WHERE title LIKE 'Do I Wanna %'
 GROUP BY title_alias
 ORDER BY title_alias
 \end{minted}
@@ -347,25 +365,27 @@ More rules:
 \begin{slide}{Not really composable}
 
 \begin{minted}{SQL}
-SELECT album_id, COUNT(*) AS track_count
-FROM tracks GROUP BY album_id
+SELECT album_id, COUNT(*)
+FROM tracks
+GROUP BY album_id
 \end{minted}
 
 \framebreak
 
-\begin{minted}[highlightlines=3-4]{SQL}
-SELECT i.album_id, i.track_count, a.artist_id
+\begin{minted}[highlightlines=3-5]{SQL}
+SELECT i.*, a.artist_id
 FROM (
-  SELECT album_id, COUNT(*) AS track_count
-  FROM tracks GROUP BY album_id
+  SELECT album_id, COUNT(*)
+  FROM tracks
+  GROUP BY album_id
 ) AS i
 JOIN albums a USING (album_id)
 \end{minted}
 \end{slide}
 
 
-\begin{slide}{Relations vs scalars}
-
+\begin{slide}{Relations and scalars}
+\Large
 % SQL has two major categories of expressions:
 % relational and scalar
 
@@ -374,28 +394,38 @@ JOIN albums a USING (album_id)
 % Here, first returns a relation, second returns a scalar
 
 \begin{minted}{SQL}
-SELECT * FROM table
+SELECT * FROM emp
 
-SELECT count(*) FROM table
+
+SELECT min(emp_id) FROM emp
 \end{minted}
 
 \framebreak
-
-% They have the same syntactical structure
-% They cannot be used in all the same places
-
-Depends on the database contents:
-
-\begin{minted}{SQL}
-SELECT emp_id FROM emp WHERE role = 'manager'
-\end{minted}
-
-\framebreak
-
-\begin{minted}{SQL}
+\begin{minted}[highlightlines=3-3]{SQL}
 SELECT * FROM emp
 WHERE emp_id = (
-    SELECT emp_id FROM emp WHERE role = 'manager'
+    SELECT min(emp_id) FROM emp
+)
+\end{minted}
+
+\framebreak
+\normalsize
+% They have the same syntactical structure
+% They cannot be used in all the same places
+Depends on the database contents:
+
+\Large
+\begin{minted}{SQL}
+SELECT emp_id FROM emp
+WHERE role = 'manager'
+\end{minted}
+
+\framebreak
+\begin{minted}[highlightlines=3-4]{SQL}
+SELECT * FROM emp
+WHERE emp_id = (
+    SELECT emp_id FROM emp
+    WHERE role = 'manager'
 )
 \end{minted}
 
@@ -640,7 +670,7 @@ from animals
 filter height_cm > 10
 take 10
 join k = keepers (==keeper_id)
-filter k.first_name == "John"
+filter k.first_name == "Thomas"
 \end{minted}
 \framebreak
 
@@ -649,7 +679,7 @@ from animals
 filter height_cm > 10
 take 10
 join k = keepers (==keeper_id)
-filter k.first_name == "John"
+filter k.first_name == "Thomas"
 sort animals.age
 \end{minted}
 \framebreak
@@ -658,7 +688,7 @@ sort animals.age
 ...
 take 10
 join k = keepers (==keeper_id)
-filter k.first_name == "John"
+filter k.first_name == "Thomas"
 sort animals.age
 select {
     animals.age,
@@ -688,11 +718,11 @@ select {
 [
   {
     "I'm Suricata suricatta, 3 years old",
-    keeper = "John Doe"
+    keeper = "Thomas Edison"
   },
   {
     "I'm Capra ibex, 12 years old",
-    keeper = "John Doe"
+    keeper = "Thomas Moor"
   },
 ]
 \end{minted}
@@ -713,7 +743,7 @@ select {
 
         - Easy exploration
 
-        - Lazy evaluation
+        % - Lazy evaluation
 
         - Extract a variable
 
@@ -726,7 +756,7 @@ select {
         filter height_cm > 10
         take 10
         join k = keepers (==keeper_id)
-        filter k.first_name == "John"
+        filter k.first_name == "Thomas"
         sort animals.age
         select {
             animals.age,
@@ -781,24 +811,6 @@ take_biggest 5
 \end{slide}
 
 
-\begin{slide}{Tuple relational calculus}
-
-% In short, this is relational algebra:
-
-\large
-
-Relation $\sim$ a set of tuples
-
-\vspace{1em}
-
-\LARGE
-
-$\pi_{\textrm{track\_id}, \textrm{name}, \textrm{title}}(R)$
-\hfill
-$\sigma_{\textrm{track\_id} = 5}(R)$
-
-\centering $R * S$
-
 % I'll go over fundamentals of PRQL syntax and semantics.
 % I want to show that if you go and design a language that is able to express relational algebra,
 % - using modern understanding of type systems,
@@ -807,8 +819,6 @@ $\sigma_{\textrm{track\_id} = 5}(R)$
 % ... you will end up with the design of PRQL (or something very similar).
 
 % In other words, the design decisions we took are obvious choices within our requirements.   
-
-\end{slide}
 
 \begin{slide}{Data model}
 
@@ -1420,9 +1430,28 @@ Currently, this is not the case:
 % 2022: PRQL started as a proposal for a new database query language
 % 
 
-\begin{slide}{The compiler and its IRs}
+\begin{slide}{Licence}
+% Language spec, docs, prqlc is open source
 
-prqlc: compiler from PRQL to SQL
+Apache License 2.0
+
+% all commits are on GH repo
+% design is discussed in GH issues
+% any PR is welcome 
+
+Open community
+
+% a language like this is hard to monetize
+% even worse: affiliation with VC would have negative impact on adoption
+% especially by open-source projects  
+% thus: a slow but steady development pace
+
+Will never monetize
+\end{slide}
+
+\begin{slide}{prqlc}
+
+compiler from PRQL to SQL
 
 targets: sql.postgres, sql.sqlite, sql.duckdb, sql.mysql, sql.clickhouse
 
@@ -1676,27 +1705,6 @@ PRQL $\rightarrow$ PL $\rightarrow$ RQ $\rightarrow$ SQL
 % \end{minted}
 % 
 % \end{slide}
-
-\begin{slide}{Licence}
-
-% Language spec, docs, prqlc is open source
-
-Apache License 2.0
-
-% all commits are on GH repo
-% design is discussed in GH issues
-% any PR is welcome 
-
-Open community
-
-% a language like this is hard to monetize
-% even worse: affiliation with VC would have negative impact on adoption
-% especially by open-source projects  
-% thus: a slow but steady development pace
-
-Will never monetize
-
-\end{slide}
 
 \begin{slide}{Check it out: playground}
 \includegraphics[width=0.8\textwidth]{images/playground.png}
