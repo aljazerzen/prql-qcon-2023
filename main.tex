@@ -119,6 +119,9 @@
 % frame breaks don't add numbers to slide title
 \setbeamertemplate{frametitle continuation}{}
 
+%remove navigation symbols
+\setbeamertemplate{navigation symbols}{}
+
 % large split between lines
 \setlength{\parskip}{\baselineskip}
 
@@ -558,6 +561,20 @@ WHERE emp_id = (
 % \end{verbatim}
 % 
 % \end{slide}
+
+\begin{slide}{}
+\textbf{\href{https://www.edgedb.com/blog/we-can-do-better-than-sql}{We Can Do Better Than SQL}} by EdgeDB
+
+\textbf{\href{https://www.scattered-thoughts.net/writing/against-sql/}{Against SQL}} by scattered-thoughts.net
+
+\textbf{\href{https://docs.microsoft.com/dotnet/csharp/linq/write-linq-queries}{LINQ}} -- a pipelined language for .NET
+
+\textbf{\href{https://github.com/MechanicalRabbit/FunSQL.jl}{FunSQL.jl}} -- compositional construction of queries for Julia
+
+\textbf{\href{https://github.com/looker-open-source/malloy}{Malloy}} -- a language for describing data 
+
+\textbf{\href{https://hexdocs.pm/ecto/Ecto.html\#module-query}{Ecto}} -- an ORM library for Elixir
+\end{slide}
 
 
 \section{Language for relations}
@@ -1054,6 +1071,7 @@ from expenses
 aggregate {total = sum cost}
 
 
+
 [
     {total = 431.22},
 ]
@@ -1077,6 +1095,7 @@ group dept (
     aggregate {total = sum cost}    
 )
 
+
 [
   {dept = "Sales",      total = 331.00},
   {dept = "Accounting", total = 100.22},
@@ -1090,6 +1109,7 @@ from expenses
 group dept (
     take 1    
 )
+
 
 [
   {dept = "Sales",      id = 33, cost =  5.30},
@@ -1155,8 +1175,6 @@ FROM expenses
 
 \begin{minted}{PRQL}
 # PRQL
-null == null  # true
-
 my_col == null
 \end{minted}
 
@@ -1714,9 +1732,9 @@ PRQL $\rightarrow$ PL $\rightarrow$ RQ $\rightarrow$ SQL
 \includegraphics[width=0.7\textwidth]{images/vscode-ext.png}
 \end{slide}
 
-\begin{slide}{Check it out: prql-query - pq}
-\includegraphics[width=0.7\textwidth]{images/pq.png}
-\end{slide}
+% \begin{slide}{Check it out: prql-query - pq}
+% \includegraphics[width=0.7\textwidth]{images/pq.png}
+% \end{slide}
 
 \begin{slidefull}{Check it out}
 

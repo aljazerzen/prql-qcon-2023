@@ -30,6 +30,13 @@ Take 5:
 - 36:00 PRQL, the project
 - 41:30 finish
 
+Take 6:
+- ?     Flaws of SQL
+- 08:16 PRQL, the language
+- 27:02 compilation
+- 33:36 PRQL, the project
+- 40:05 finish
+
 Questions:
 - How does PRQL compare to SQL in terms of performance?
 - The general structure is similar to data frame libraries. How does PRQL compare to say, pandas or dplyr?
